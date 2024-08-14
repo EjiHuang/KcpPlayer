@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12</LangVersion>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <PackageId>FFmpeg.ApiWrapper</PackageId>
+    <Description>Low level, mostly safe FFmpeg API wrappers based on FFmpeg.AutoGen.</Description>
+    <Version>0.0.0-dev</Version>
+    <Product>FFmpeg.ApiWrapper</Product>
+    <PackageProjectUrl>https://github.com/dubiousconst282/FFmpegWrapper</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>dubiousconst282</Authors>
+
+    <PackageOutputPath>$(SolutionDir)artifacts</PackageOutputPath>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Don't warn about missing xmldocs for public entities. -->
+    <NoWarn>CS1591;CS1573</NoWarn>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FFmpeg.AutoGen" Version="7.0.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+  </ItemGroup>
+</Project>
