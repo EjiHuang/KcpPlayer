@@ -12,6 +12,7 @@ namespace KcpPlayer.View
     public partial class MainView : Window
     {
         private MainViewModel _viewModel;
+        private double _dpiRatio = 1.0d;
 
         public MainView()
         {
@@ -26,21 +27,24 @@ namespace KcpPlayer.View
             };
             GlView.Start(glSettings);
 
-            _viewModel = new MainViewModel((OpenTK.Windowing.Desktop.IGLFWGraphicsContext)GlView.Context!);
+            _viewModel = new MainViewModel();
             DataContext = _viewModel;
+
+            Loaded += MainView_Loaded;
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void MainView_Loaded(object sender, RoutedEventArgs e)
         {
-            Wpf.Ui.Appearance.SystemThemeWatcher.Watch(this, Wpf.Ui.Controls.WindowBackdropType.Mica, true);
+            PresentationSource source = PresentationSource.FromVisual(this);
+            _dpiRatio = source.CompositionTarget.TransformToDevice.M11;
         }
 
         private void GlView_Render(TimeSpan delta)
         {
             var videoWidth = _viewModel.VideoWidth;
             var videoHeight = _viewModel.VideoHeight;
-            var clientWidth = (int)GlView.ActualWidth;
-            var clientHeight = (int)GlView.ActualHeight;
+            var clientWidth = (int)(GlView.ActualWidth * _dpiRatio);
+            var clientHeight = (int)(GlView.ActualHeight * _dpiRatio);
 
             double scale = Math.Min(clientWidth / (double)videoWidth, clientHeight / (double)videoHeight);
             int w = (int)Math.Round(videoWidth * scale);
@@ -51,7 +55,6 @@ namespace KcpPlayer.View
             //FIXME: flickering after resize (caused by double buffering)
             GL.Viewport(0, 0, clientWidth, clientHeight);
             //GL.Clear(ClearBufferMask.ColorBufferBit);
-
             GL.Viewport(x, y, w, h);
 
             _viewModel.VideoRender();

@@ -1,107 +1,124 @@
-﻿using KcpPlayer.OpenGL;
-using OpenTK.Windowing.Desktop;
-using Sdcb.FFmpeg.Codecs;
-using Sdcb.FFmpeg.Formats;
-using Sdcb.FFmpeg.Raw;
-using Sdcb.FFmpeg.Toolboxs.Extensions;
-using Sdcb.FFmpeg.Utils;
+﻿using FFmpeg.Wrapper;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Windows.Media;
 
 namespace KcpPlayer.Core
 {
     public class FFmpegService
     {
-        private CancellationTokenSource _cts = new CancellationTokenSource();
-        private ConcurrentQueue<Frame> _videoFrames = new ConcurrentQueue<Frame>();
+        private ConcurrentQueue<VideoFrame> _videoFrames = new ConcurrentQueue<VideoFrame>();
+
+        private MediaDemuxer? _demuxer;
+        private HardwareDevice? _hwDevice;
+        private MediaStream? _stream;
+        private VideoDecoder? _decoder;
+        private SwScaler? _swScaler = null;
+        private Task? _decodeLoop;
+        private CancellationTokenSource? _ctsForDecodeLoop;
 
         private VideoStreamRenderer _renderHelper;
 
         public int VideoWidth { get; private set; }
         public int VideoHeight { get; private set; }
+        public bool IsDecoding { get; private set; }
 
-        public FFmpegService(IGLFWGraphicsContext gLFW)
+        public FFmpegService()
         {
-            FFmpegLogger.LogWriter = (level, msg) => Debug.WriteLine($"{level} {msg}");
+            FFmpeg.AutoGen.ffmpeg.RootPath = AppContext.BaseDirectory + "runtimes/win-x64/native";
 
-            _renderHelper = new VideoStreamRenderer(gLFW);
+            _renderHelper = new VideoStreamRenderer();
         }
 
-        public unsafe void DecodeRTSP(string url, CancellationToken cancellationToken = default)
+        public async Task DecodeRTSPAsync(string url)
         {
-            MediaDictionary options = new MediaDictionary();
-            if (url.StartsWith("rtsp", StringComparison.CurrentCultureIgnoreCase))
+            _demuxer = await Task.Run(() => new MediaDemuxer(url));
+
+            _stream = _demuxer.FindBestStream(MediaTypes.Video);
+            if (_stream == null) return;
+
+            _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
+            if (_decoder == null) return;
+
+            var hwConfig = _decoder.GetHardwareConfigs().FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
+            _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
+
+            if (_hwDevice != null)
             {
-                options.Set("fflags", "nobuffer");
-                options.Set("timeout", "5000000");
-                options.Set("rtsp_flags", "prefer_tcp");
+                _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
             }
-            else if (url.StartsWith("rtmp", StringComparison.CurrentCultureIgnoreCase))
-            {
-                options.Set("fflags", "nobuffer");
-                options.Set("rw_timeout", "1000000");
-            }
-
-            using FormatContext fc = FormatContext.OpenInputUrl(url, options: options);
-            fc.LoadStreamInfo();
-            MediaStream videoStream = fc.GetVideoStream();
-
-            using CodecContext videoDecoder = new CodecContext(Codec.FindDecoderById(videoStream.Codecpar!.CodecId));
-            videoDecoder.FillParameters(videoStream.Codecpar!);
-
-            using var device = HardwareDevice.Create(AVHWDeviceType.Dxva2);
-            if (device != null)
-            {
-                SetupHardwareAccelerator(videoDecoder, device);
-            }
-
-            videoDecoder.Open();
+            _decoder.Open();
             
-            VideoWidth = videoDecoder.Width;
-            VideoHeight = videoDecoder.Height;
+            VideoWidth = _decoder.Width;
+            VideoHeight = _decoder.Height;
 
-            foreach (var frame in fc
-                .ReadPackets(videoStream.Index)
-                .DecodePackets(videoDecoder))
+            _ctsForDecodeLoop = new CancellationTokenSource();
+            _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
+        }
+
+        public async Task StopVideoAsync()
+        {
+            if (IsDecoding)
             {
-                if (cancellationToken.IsCancellationRequested) break;
+                _ctsForDecodeLoop?.Cancel();
+                await _decodeLoop!;
+                _ctsForDecodeLoop = null;
 
-                //Debug.WriteLine($"fmt:{(AVPixelFormat)frame.Format} w:{frame.Width} h:{frame.Height}");
-
-                _videoFrames.Enqueue(frame.Clone());
-
-                frame.Unref();
+                Free();
             }
+        }
+
+        private void Free()
+        {
+            _decoder?.Dispose();
+            _demuxer?.Dispose();
+
+            _swScaler?.Dispose();
+            _swScaler = null;
+        }
+
+        private void DecodeLoop()
+        {
+            IsDecoding = true;
+
+            while (_ctsForDecodeLoop != null && !_ctsForDecodeLoop.IsCancellationRequested)
+            {
+                var frame = new VideoFrame();
+                using var packet = new MediaPacket();
+
+                try
+                {
+                    if (_demuxer!.Read(packet))
+                    {
+                        if (packet.StreamIndex != _stream!.Index)
+                            continue;
+
+                        _decoder!.SendPacket(packet);
+                        if (_decoder!.ReceiveFrame(frame))
+                        {
+                            _videoFrames.Enqueue(frame);
+                        }
+                    }
+                    else
+                    {
+                        Thread.Sleep(1);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex);
+                }
+            }
+
+            IsDecoding = false;
         }
 
         public unsafe void Render()
         {
             if (_videoFrames.TryDequeue(out var frame))
             {
-                _renderHelper.DrawTexture(new VideoFrame((AVFrame*)frame, false));
-                frame.Unref();
+                _renderHelper.DrawTexture(frame);
+                frame.Dispose();
             }
-        }
-
-        //Used to prevent callback pointer from being GC collected
-        AVCodecContext_get_format? _chooseHwPixelFmt;
-        private unsafe void SetupHardwareAccelerator(CodecContext codec, HardwareDevice device)
-        {
-            codec.HwDeviceContext = BufferRef.FromNativeOrNull(device.Handle, false);
-            ((AVCodecContext*)codec)->get_format = _chooseHwPixelFmt = (ctx, pAvailFmts) =>
-            {
-                for (var pFmt = pAvailFmts; *pFmt != AVPixelFormat.None; pFmt++)
-                {
-                    if (*pFmt == AVPixelFormat.Dxva2Vld)
-                    {
-                        return *pFmt;
-                    }
-                }
-                return ctx->sw_pix_fmt;
-            };
         }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KcpPlayer.Core;
-using OpenTK.Windowing.Desktop;
 using System.Windows;
 using System.Windows.Input;
 
@@ -10,19 +9,17 @@ namespace KcpPlayer.ViewModel
     public class MainViewModel : ObservableObject
     {
         private FFmpegService _ffmpegService;
-        private CancellationTokenSource? _cts;
 
-        public MainViewModel(IGLFWGraphicsContext gLFW)
+        public MainViewModel()
         {
-            _ffmpegService = new FFmpegService(gLFW);
+            _ffmpegService = new FFmpegService();
         }
 
-        private void VideoPlay()
+        private async Task VideoPlayAsync()
         {
             try
             {
-                _cts = new CancellationTokenSource();
-                Task.Run(() => _ffmpegService.DecodeRTSP(Url, _cts.Token));
+                await _ffmpegService.DecodeRTSPAsync(Url);
             }
             catch (Exception ex)
             {
@@ -30,9 +27,9 @@ namespace KcpPlayer.ViewModel
             }
         }
 
-        private void VideoStop()
+        private async Task VideoStopAsync()
         {
-            _cts?.Cancel();
+            await _ffmpegService.StopVideoAsync();
         }
 
         public void VideoRender()
@@ -50,10 +47,10 @@ namespace KcpPlayer.ViewModel
             set => SetProperty(ref _url, value);
         }
 
-        private RelayCommand? _videoPlayCommand;
-        public ICommand VideoPlayCommand => _videoPlayCommand ??= new RelayCommand(VideoPlay);
+        private AsyncRelayCommand? _videoPlayCommand;
+        public ICommand VideoPlayCommand => _videoPlayCommand ??= new AsyncRelayCommand(VideoPlayAsync);
 
-        private RelayCommand? _videoStopCommand;
-        public ICommand VideoStopCommand => _videoStopCommand ??= new RelayCommand(VideoStop);
+        private AsyncRelayCommand? _videoStopCommand;
+        public ICommand VideoStopCommand => _videoStopCommand ??= new AsyncRelayCommand(VideoStopAsync);
     }
 }
