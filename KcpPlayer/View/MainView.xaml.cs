@@ -39,6 +39,7 @@ namespace KcpPlayer.View
             _dpiRatio = source.CompositionTarget.TransformToDevice.M11;
         }
 
+        private double _counter = 0d;
         private void GlView_Render(TimeSpan delta)
         {
             var videoWidth = _viewModel.VideoWidth;
@@ -56,6 +57,16 @@ namespace KcpPlayer.View
             GL.Viewport(0, 0, clientWidth, clientHeight);
             //GL.Clear(ClearBufferMask.ColorBufferBit);
             GL.Viewport(x, y, w, h);
+
+            // Print some info
+            _counter += delta.TotalMilliseconds;
+            if (_counter > 1000)
+            {
+                var fps = 1000 / delta.TotalMilliseconds;
+                tb_Resolution.Text = $"W {videoWidth} H {videoHeight}";
+                tb_Fps.Text = $"FPS {fps:f1}";
+                _counter = 0;
+            }
 
             _viewModel.VideoRender();
         }

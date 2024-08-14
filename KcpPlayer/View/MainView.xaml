@@ -29,8 +29,9 @@
             Render="GlView_Render" />
         <Grid Grid.Row="1" Margin="10,5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition />
+                <ColumnDefinition Width="500" />
                 <ColumnDefinition Width="auto" />
+                <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <DockPanel>
                 <ui:TextBlock
@@ -49,6 +50,20 @@
                     Width="80"
                     Command="{Binding VideoStopCommand}"
                     Content="Stop" />
+            </StackPanel>
+            <StackPanel
+                Grid.Column="2"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <TextBlock
+                    x:Name="tb_Resolution"
+                    Margin="10,0,10,0"
+                    Text="W 0 H 0" />
+                <TextBlock
+                    x:Name="tb_Fps"
+                    Width="70"
+                    Text="FPS 0" />
             </StackPanel>
         </Grid>
     </Grid>

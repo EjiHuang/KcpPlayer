@@ -40,7 +40,7 @@ namespace KcpPlayer.ViewModel
         public int VideoWidth => _ffmpegService.VideoWidth;
         public int VideoHeight => _ffmpegService.VideoHeight;
 
-        private string _url = "rtsp://127.0.0.1:8554/live/0";
+        private string _url = "rtsp://192.168.48.1:8554/channel=0";
         public string Url
         {
             get => _url;
