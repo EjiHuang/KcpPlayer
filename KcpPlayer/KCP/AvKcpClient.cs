@@ -14,16 +14,29 @@ namespace KcpPlayer.KCP
         public AvKcpClient(int port, IPEndPoint endPoint, TraceListener? traceListener = null)
         {
             _client = new KcpClient(port, endPoint);
-            if (traceListener != null)
+            if (traceListener == null)
             {
-                _client.Kcp.TraceListener = traceListener;
+                _client.Kcp.TraceListener = new ConsoleTraceListener();
             }
 
             _taskForUpdateState = Task.Run(async () =>
             {
+                var sw = new Stopwatch();
+                sw.Start();
+                var interval = 1000;    // 1s
+
+                var hb = Encoding.ASCII.GetBytes("hb");
+
                 while (true)
                 {
                     _client.Kcp.Update(DateTimeOffset.UtcNow);
+
+                    if (sw.ElapsedMilliseconds >= interval)
+                    {
+                        _client.Send(hb, hb.Length);
+                        sw.Restart();
+                    }
+
                     await Task.Delay(10);
                 }
             });
@@ -47,9 +60,11 @@ namespace KcpPlayer.KCP
         {
             while (_ctsForRecv != null && !_ctsForRecv.IsCancellationRequested)
             {
-                var result = await _client.ReceiveAsync();
-                var str = Encoding.UTF8.GetString(result);
-                Debug.WriteLine(str);
+                var data = await _client.ReceiveAsync();
+                if (data != null)
+                {
+
+                }
             }
         }
     }

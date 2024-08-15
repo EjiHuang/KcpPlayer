@@ -27,6 +27,7 @@ namespace KcpPlayer.ViewModel
         {
             _ffmpegService = new FFmpegService();
 
+            Urls.Add("kcp://127.0.0.1:40001");
             var cameraDevices = FFmpegCameraManager.GetCameraDevices();
             if (cameraDevices != null)
             {
@@ -47,7 +48,7 @@ namespace KcpPlayer.ViewModel
                     var ip = uri.Host;
                     var port = uri.Port;
 
-                    _avKcpClient = new AvKcpClient(port + 1, new IPEndPoint(IPAddress.Parse(ip), port), TbTraceListener);
+                    _avKcpClient = new AvKcpClient(port + 1, new IPEndPoint(IPAddress.Parse(ip), port), null);
                     _avKcpClient.Start();
                     _avKcpClient.RequestVideoStream();
                 }
@@ -70,7 +71,7 @@ namespace KcpPlayer.ViewModel
 
         private async Task StartKcpServerAsync()
         {
-            _avKcpServer = new AvKcpServer(KcpPort, TbTraceListener);
+            _avKcpServer = new AvKcpServer(KcpPort, _ffmpegService);
             _avKcpServer.Start();
 
             KcpServerRunning = true;

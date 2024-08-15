@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KcpPlayer", "KcpPlayer\KcpP
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FFmpegWrapper", "FFmpegWrapper\FFmpegWrapper.csproj", "{7F16DA5D-31CE-4548-83ED-08B98AFE27E2}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kcp", "Kcp\Kcp.csproj", "{452F3961-7A78-47F6-B1D3-47F483856277}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{7F16DA5D-31CE-4548-83ED-08B98AFE27E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F16DA5D-31CE-4548-83ED-08B98AFE27E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F16DA5D-31CE-4548-83ED-08B98AFE27E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{452F3961-7A78-47F6-B1D3-47F483856277}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{452F3961-7A78-47F6-B1D3-47F483856277}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{452F3961-7A78-47F6-B1D3-47F483856277}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{452F3961-7A78-47F6-B1D3-47F483856277}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

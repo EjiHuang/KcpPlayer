@@ -12,10 +12,10 @@ namespace KcpPlayer.KCP
         public SimpleSegManager.Kcp Kcp { get; private set; }
         public IPEndPoint? EndPoint { get; set; }
 
-        public KcpClient(int port) 
+        public KcpClient(int port)
             : this(port, null)
         {
-            
+
         }
 
         public KcpClient(int port, IPEndPoint? endPoint)
@@ -41,9 +41,14 @@ namespace KcpPlayer.KCP
             buffer.Dispose();
         }
 
-        public void Send(byte[] datagram, int bytes)
+        public int Send(byte[] datagram, int bytes)
         {
-            Kcp.Send(datagram.AsSpan().Slice(0, bytes));
+            return Kcp.Send(datagram.AsSpan().Slice(0, bytes));
+        }
+
+        public int Send(Span<byte> datagram, int bytes)
+        {
+            return Kcp.Send(datagram.Slice(0, bytes));
         }
 
         public async ValueTask<byte[]> ReceiveAsync()

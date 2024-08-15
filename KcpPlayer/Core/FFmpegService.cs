@@ -1,4 +1,5 @@
 ﻿using FFmpeg.Wrapper;
+using KcpPlayer.KCP;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
@@ -17,6 +18,7 @@ namespace KcpPlayer.Core
         private CancellationTokenSource? _ctsForDecodeLoop;
 
         private VideoStreamRenderer _renderHelper;
+        private AvKcpServer? _avKcpServer;
 
         public int VideoWidth { get; private set; }
         public int VideoHeight { get; private set; }
@@ -97,6 +99,9 @@ namespace KcpPlayer.Core
                         if (packet.StreamIndex != _stream!.Index)
                             continue;
 
+                        // Try to send avkcp packet
+                        _avKcpServer?.SendAvPacket(packet.Data);
+
                         _decoder!.SendPacket(packet);
                         if (_decoder!.ReceiveFrame(frame))
                         {
@@ -124,6 +129,11 @@ namespace KcpPlayer.Core
                 _renderHelper.DrawTexture(frame);
                 frame.Dispose();
             }
+        }
+
+        public void RegisterAvKcpServer(AvKcpServer avKcpServer)
+        {
+            _avKcpServer = avKcpServer;
         }
     }
 }

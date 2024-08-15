@@ -31,7 +31,7 @@
                 Render="GlView_Render" />
             <ui:TextBlock
                 x:Name="tb_TraceListener"
-                Width="500"
+                Width="auto"
                 Height="150"
                 Margin="10"
                 HorizontalAlignment="Left"
