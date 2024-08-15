@@ -1,7 +1,7 @@
-﻿using FFmpeg.Wrapper;
+﻿using FFmpeg.AutoGen;
+using FFmpeg.Wrapper;
 using KcpPlayer.OpenGL;
 using OpenTK.Graphics.OpenGL4;
-using OpenTK.Windowing.Desktop;
 using System.Diagnostics;
 
 namespace KcpPlayer.Core
@@ -17,6 +17,7 @@ namespace KcpPlayer.Core
         private VertexFormat _emptyVao;
 
         private bool _flushed = false;
+        private SwScaler? _nv12SwScaler;
 
         public VideoStreamRenderer()
         {
@@ -32,34 +33,64 @@ namespace KcpPlayer.Core
 
         public void DrawTexture(VideoFrame decodedFrame)
         {
-            //There's no easy way to interop between HW and GL surfaces, so we'll have to do a copy through the CPU here.
-            //For what is worth, a 4K 60FPS P010 stream will in theory only take ~1400MB/s of bandwidth, which is not that bad.
-
-            Debug.Assert(decodedFrame.IsHardwareFrame); //TODO: implement support for SW frames
-
-            //TODO: Use TransferTo() when Map() fails.
-            using var frame = decodedFrame.Map(HardwareFrameMappingFlags.Read | HardwareFrameMappingFlags.Direct)!;
-
-            var (pixelType, pixelStride) = frame.PixelFormat switch
+            if (decodedFrame.IsHardwareFrame)
             {
-                PixelFormats.NV12 => (PixelType.UnsignedByte, 1),
-                PixelFormats.P010LE => (PixelType.UnsignedShort, 2)
-            };
+                //There's no easy way to interop between HW and GL surfaces, so we'll have to do a copy through the CPU here.
+                //For what is worth, a 4K 60FPS P010 stream will in theory only take ~1400MB/s of bandwidth, which is not that bad.
 
-            bool highDepth = pixelStride == 2; //Don't downscale high bit-depth formats, otherwise we could end with ugly banding
+                Debug.Assert(decodedFrame.IsHardwareFrame); //TODO: implement support for SW frames
 
-            _texY ??= new Texture2D(frame.Width, frame.Height, 1, highDepth ? SizedInternalFormat.R16 : SizedInternalFormat.R8);
-            _texUV ??= new Texture2D(frame.Width / 2, frame.Height / 2, 1, highDepth ? SizedInternalFormat.Rg16 : SizedInternalFormat.Rg8);
+                //TODO: Use TransferTo() when Map() fails.
+                using var frame = decodedFrame.Map(HardwareFrameMappingFlags.Read | HardwareFrameMappingFlags.Direct)!;
 
-            _texY.SetPixels<byte>(
-                frame.GetPlaneSpan<byte>(0, out int strideY),
-                0, 0, frame.Width, frame.Height,
-                PixelFormat.Red, pixelType, rowLength: strideY / pixelStride);
+                var (pixelType, pixelStride) = frame.PixelFormat switch
+                {
+                    PixelFormats.NV12 => (PixelType.UnsignedByte, 1),
+                    PixelFormats.P010LE => (PixelType.UnsignedShort, 2)
+                };
 
-            _texUV.SetPixels<byte>(
-                frame.GetPlaneSpan<byte>(1, out int strideUV),
-                0, 0, frame.Width / 2, frame.Height / 2,
-                PixelFormat.Rg, pixelType, rowLength: strideUV / pixelStride / 2);
+                bool highDepth = pixelStride == 2; //Don't downscale high bit-depth formats, otherwise we could end with ugly banding
+
+                _texY ??= new Texture2D(frame.Width, frame.Height, 1, highDepth ? SizedInternalFormat.R16 : SizedInternalFormat.R8);
+                _texUV ??= new Texture2D(frame.Width / 2, frame.Height / 2, 1, highDepth ? SizedInternalFormat.Rg16 : SizedInternalFormat.Rg8);
+
+                _texY.SetPixels<byte>(
+                    frame.GetPlaneSpan<byte>(0, out int strideY),
+                    0, 0, frame.Width, frame.Height,
+                    PixelFormat.Red, pixelType, rowLength: strideY / pixelStride);
+
+                _texUV.SetPixels<byte>(
+                    frame.GetPlaneSpan<byte>(1, out int strideUV),
+                    0, 0, frame.Width / 2, frame.Height / 2,
+                    PixelFormat.Rg, pixelType, rowLength: strideUV / pixelStride / 2);
+            }
+            else
+            {
+                if (_nv12SwScaler == null || !_nv12SwScaler.InputFormat.Equals(decodedFrame.Format))
+                {
+                    var srcFmt = new PictureFormat(decodedFrame.Width, decodedFrame.Height, decodedFrame.PixelFormat);
+                    var dstFmt = new PictureFormat(decodedFrame.Width, decodedFrame.Height, AVPixelFormat.AV_PIX_FMT_NV12);
+                    _nv12SwScaler = new SwScaler(srcFmt, dstFmt, InterpolationMode.FastBilinear);
+                }
+
+                using var frame = new VideoFrame(decodedFrame.Width, decodedFrame.Height, AVPixelFormat.AV_PIX_FMT_NV12);
+                _nv12SwScaler.Convert(decodedFrame, frame);
+
+                var pixelStride = 1;
+                var pixelType = PixelType.UnsignedByte;
+                _texY ??= new Texture2D(frame.Width, frame.Height, 1, SizedInternalFormat.R8);
+                _texUV ??= new Texture2D(frame.Width / 2, frame.Height / 2, 1, SizedInternalFormat.Rg8);
+
+                _texY.SetPixels<byte>(
+                    frame.GetPlaneSpan<byte>(0, out int strideY),
+                    0, 0, frame.Width, frame.Height,
+                    PixelFormat.Red, pixelType, rowLength: strideY / pixelStride);
+
+                _texUV.SetPixels<byte>(
+                    frame.GetPlaneSpan<byte>(1, out int strideUV),
+                    0, 0, frame.Width / 2, frame.Height / 2,
+                    PixelFormat.Rg, pixelType, rowLength: strideUV / pixelStride / 2);
+            }
 
             _texY.BindUnit(0);
             _texUV.BindUnit(1);

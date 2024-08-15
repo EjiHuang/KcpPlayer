@@ -39,15 +39,20 @@ namespace KcpPlayer.Core
             _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
             if (_decoder == null) return;
 
-            var hwConfig = _decoder.GetHardwareConfigs().FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
-            _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
-
-            if (_hwDevice != null)
+            var hwConfigs = _decoder.GetHardwareConfigs();
+            if (hwConfigs != null && hwConfigs.Count > 0)
             {
-                _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
+                var hwConfig = hwConfigs.FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
+                _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
+
+                if (_hwDevice != null)
+                {
+                    _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
+                }
             }
-            _decoder.Open();
             
+            _decoder.Open();
+
             VideoWidth = _decoder.Width;
             VideoHeight = _decoder.Height;
 

@@ -22,11 +22,21 @@
         <Grid.RowDefinitions>
             <RowDefinition />
             <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
-        <glWpfControl:GLWpfControl
-            x:Name="GlView"
-            Margin="2"
-            Render="GlView_Render" />
+        <Grid>
+            <glWpfControl:GLWpfControl
+                x:Name="GlView"
+                Margin="2"
+                Render="GlView_Render" />
+            <ui:TextBlock
+                x:Name="tb_TraceListener"
+                Width="500"
+                Height="150"
+                Margin="10"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom" />
+        </Grid>
         <Grid Grid.Row="1" Margin="10,5">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="500" />
@@ -38,7 +48,10 @@
                     Margin="0,0,10,0"
                     VerticalAlignment="Center"
                     Text="URL" />
-                <ComboBox IsEditable="True" Text="{Binding Url}" />
+                <ComboBox
+                    IsEditable="True"
+                    ItemsSource="{Binding Urls}"
+                    Text="{Binding Url}" />
             </DockPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <ui:Button
@@ -64,6 +77,41 @@
                     x:Name="tb_Fps"
                     Width="70"
                     Text="FPS 0" />
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="2" Margin="10,5">
+            <StackPanel Orientation="Horizontal">
+                <ui:TextBlock VerticalAlignment="Center" Text="KCP Port" />
+                <ui:TextBox
+                    Width="90"
+                    Margin="10,0,0,0"
+                    Text="{Binding KcpPort}" />
+                <ui:Button
+                    Margin="10,0,0,0"
+                    Command="{Binding StartKcpServerCommand}"
+                    Content="Start Server" />
+                <ui:Button Margin="10,0,0,0" Content="Stop Server" />
+            </StackPanel>
+            <StackPanel
+                Grid.Column="2"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <ui:TextBlock Margin="10,0,10,0" Text="Server" />
+                <ui:TextBlock>
+                    <ui:TextBlock.Style>
+                        <Style TargetType="ui:TextBlock">
+                            <Setter Property="Text" Value="off" />
+                            <Setter Property="Foreground" Value="Red" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding KcpServerRunning}" Value="true">
+                                    <Setter Property="Text" Value="on" />
+                                    <Setter Property="Foreground" Value="Green" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:TextBlock.Style>
+                </ui:TextBlock>
             </StackPanel>
         </Grid>
     </Grid>

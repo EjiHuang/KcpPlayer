@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 namespace FFmpeg.Wrapper;
 
@@ -76,7 +77,22 @@ public unsafe class MediaDemuxer : FFObject
         AVDictionary* rawOpts = null;
         MediaDictionary.Populate(&rawOpts, options);
 
-        ffmpeg.avformat_open_input(&ctx, url, null, &rawOpts).CheckError("Could not open input");
+        if (url!.StartsWith("video=", StringComparison.CurrentCultureIgnoreCase))
+        {
+            // capture camera device
+            ffmpeg.avdevice_register_all();
+            string inputFormat = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dshow"
+                                    : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "v4l2"
+                                    //: RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "avfoundation"
+                                    : throw new NotSupportedException($"Cannot find adequate input format - OSArchitecture:[{RuntimeInformation.OSArchitecture}] - OSDescription:[{RuntimeInformation.OSDescription}]");
+
+            AVInputFormat* aVInputFormat = ffmpeg.av_find_input_format(inputFormat);
+            ffmpeg.avformat_open_input(&ctx, url, aVInputFormat, null).CheckError("Could not open input");
+        }
+        else
+        {
+            ffmpeg.avformat_open_input(&ctx, url, null, &rawOpts).CheckError("Could not open input");
+        }
 
         try {
             if (ffmpeg.av_dict_count(rawOpts) > 0) {

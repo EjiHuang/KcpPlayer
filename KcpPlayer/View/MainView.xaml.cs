@@ -1,4 +1,5 @@
-﻿using KcpPlayer.ViewModel;
+﻿using KcpPlayer.Utils;
+using KcpPlayer.ViewModel;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Wpf;
@@ -13,6 +14,7 @@ namespace KcpPlayer.View
     {
         private MainViewModel _viewModel;
         private double _dpiRatio = 1.0d;
+        private TextBlockTraceListener _tbTraceListener;
 
         public MainView()
         {
@@ -29,6 +31,9 @@ namespace KcpPlayer.View
 
             _viewModel = new MainViewModel();
             DataContext = _viewModel;
+
+            _tbTraceListener = new TextBlockTraceListener(tb_TraceListener);
+            _viewModel.TbTraceListener = _tbTraceListener;
 
             Loaded += MainView_Loaded;
         }
