@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Text;
 
@@ -11,6 +12,8 @@ namespace KcpPlayer.KCP
         private Task? _taskForRecv;
         private CancellationTokenSource? _ctsForRecv;
 
+        public MemoryStream Stream { get; private set; }
+
         public AvKcpClient(int port, IPEndPoint endPoint, TraceListener? traceListener = null)
         {
             _client = new KcpClient(port, endPoint);
@@ -18,6 +21,8 @@ namespace KcpPlayer.KCP
             {
                 _client.Kcp.TraceListener = new ConsoleTraceListener();
             }
+
+            Stream = new MemoryStream();
 
             _taskForUpdateState = Task.Run(async () =>
             {
@@ -50,12 +55,6 @@ namespace KcpPlayer.KCP
             Debug.WriteLine("[KCP] Client is running...");
         }
 
-        public void RequestVideoStream()
-        {
-            var hello = Encoding.UTF8.GetBytes("Hello server.");
-            _client.Send(hello, hello.Length);
-        }
-
         private async void Recv()
         {
             while (_ctsForRecv != null && !_ctsForRecv.IsCancellationRequested)
@@ -63,7 +62,7 @@ namespace KcpPlayer.KCP
                 var data = await _client.ReceiveAsync();
                 if (data != null)
                 {
-
+                    Stream.Write(data, 0, data.Length);
                 }
             }
         }

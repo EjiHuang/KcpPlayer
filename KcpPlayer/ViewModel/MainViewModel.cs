@@ -50,7 +50,9 @@ namespace KcpPlayer.ViewModel
 
                     _avKcpClient = new AvKcpClient(port + 1, new IPEndPoint(IPAddress.Parse(ip), port), null);
                     _avKcpClient.Start();
-                    _avKcpClient.RequestVideoStream();
+
+                    //await _ffmpegService.DecodeFromStreamAsync(_avKcpClient.Stream);
+                    await _ffmpegService.DecodeRTSPAsync("udp://127.0.0.1:40002");
                 }
                 else
                 {
@@ -69,7 +71,7 @@ namespace KcpPlayer.ViewModel
             await _ffmpegService.StopVideoAsync();
         }
 
-        private async Task StartKcpServerAsync()
+        private void StartKcpServer()
         {
             _avKcpServer = new AvKcpServer(KcpPort, _ffmpegService);
             _avKcpServer.Start();
@@ -112,7 +114,7 @@ namespace KcpPlayer.ViewModel
         private AsyncRelayCommand? _videoStopCommand;
         public ICommand VideoStopCommand => _videoStopCommand ??= new AsyncRelayCommand(VideoStopAsync);
 
-        private AsyncRelayCommand? _startKcpServerCommand;
-        public ICommand StartKcpServerCommand => _startKcpServerCommand ??= new AsyncRelayCommand(StartKcpServerAsync);
+        private RelayCommand? _startKcpServerCommand;
+        public ICommand StartKcpServerCommand => _startKcpServerCommand ??= new RelayCommand(StartKcpServer);
     }
 }

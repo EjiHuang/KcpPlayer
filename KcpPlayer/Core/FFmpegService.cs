@@ -2,6 +2,7 @@
 using KcpPlayer.KCP;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO;
 
 namespace KcpPlayer.Core
 {
@@ -17,6 +18,9 @@ namespace KcpPlayer.Core
         private Task? _decodeLoop;
         private CancellationTokenSource? _ctsForDecodeLoop;
 
+        private MemoryStream? _streamStream;
+        private IOContext? _ioContext;
+
         private VideoStreamRenderer _renderHelper;
         private AvKcpServer? _avKcpServer;
 
@@ -29,6 +33,12 @@ namespace KcpPlayer.Core
             FFmpeg.AutoGen.ffmpeg.RootPath = AppContext.BaseDirectory + "runtimes/win-x64/native";
 
             _renderHelper = new VideoStreamRenderer();
+        }
+
+        public async Task DecodeFromStreamAsync(Stream stream)
+        {
+            _ioContext = IOContext.CreateInputFromStream(stream);
+            _demuxer = await Task.Run(() => new MediaDemuxer(_ioContext));
         }
 
         public async Task DecodeRTSPAsync(string url)

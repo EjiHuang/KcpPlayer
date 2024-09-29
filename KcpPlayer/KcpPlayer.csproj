@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FFmpegWrapper\FFmpegWrapper.csproj" />
-    <ProjectReference Include="..\FFmpegWrapper\FFmpegWrapper\FFmpegWrapper.csproj" />
     <ProjectReference Include="..\Kcp\Kcp.csproj" />
   </ItemGroup>
 

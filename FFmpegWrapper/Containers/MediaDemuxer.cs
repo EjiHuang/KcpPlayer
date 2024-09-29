@@ -7,8 +7,10 @@ public unsafe class MediaDemuxer : FFObject
 {
     private AVFormatContext* _ctx;
 
-    public AVFormatContext* Handle {
-        get {
+    public AVFormatContext* Handle
+    {
+        get
+        {
             ThrowIfDisposed();
             return _ctx;
         }
@@ -59,16 +61,18 @@ public unsafe class MediaDemuxer : FFObject
         _ownsCtx = takeOwnership;
 
         var streams = ImmutableArray.CreateBuilder<MediaStream>((int)_ctx->nb_streams);
-        for (int i = 0; i < _ctx->nb_streams; i++) {
+        for (int i = 0; i < _ctx->nb_streams; i++)
+        {
             streams.Add(new MediaStream(_ctx->streams[i]));
         }
         Streams = streams.MoveToImmutable();
     }
-    
+
     private static AVFormatContext* CreateContext(string? url, AVIOContext* pb, IEnumerable<KeyValuePair<string, string>>? options)
     {
         var ctx = ffmpeg.avformat_alloc_context();
-        if (ctx == null) {
+        if (ctx == null)
+        {
             throw new OutOfMemoryException("Could not allocate demuxer.");
         }
 
@@ -77,7 +81,7 @@ public unsafe class MediaDemuxer : FFObject
         AVDictionary* rawOpts = null;
         MediaDictionary.Populate(&rawOpts, options);
 
-        if (url!.StartsWith("video=", StringComparison.CurrentCultureIgnoreCase))
+        if (url != null && url!.StartsWith("video=", StringComparison.CurrentCultureIgnoreCase))
         {
             // capture camera device
             ffmpeg.avdevice_register_all();
@@ -91,15 +95,35 @@ public unsafe class MediaDemuxer : FFObject
         }
         else
         {
+            if (url != null && url.ToLower().StartsWith("rtmp"))
+            {
+                ffmpeg.av_dict_set(&rawOpts, "rw_timeout", "1000000", 0);
+            }
+
+            if (url != null && url.ToLower().StartsWith("udp"))
+            {
+                ffmpeg.av_dict_set(&rawOpts, "timeout", "1000000", 0);
+            }
+
+            if (url != null && url.ToLower().StartsWith("rtsp"))
+            {
+                ffmpeg.av_dict_set(&rawOpts, "timeout", "1000000", 0);
+                ffmpeg.av_dict_set(&rawOpts, "rtsp_flags", "prefer_tcp", 0);
+            }
+
             ffmpeg.avformat_open_input(&ctx, url, null, &rawOpts).CheckError("Could not open input");
         }
 
-        try {
-            if (ffmpeg.av_dict_count(rawOpts) > 0) {
+        try
+        {
+            if (ffmpeg.av_dict_count(rawOpts) > 0)
+            {
                 string invalidKeys = string.Join("', '", new MediaDictionary(&rawOpts).Select(e => e.Key));
                 throw new InvalidOperationException($"Unknown or invalid demuxer options (keys: '{invalidKeys}')");
             }
-        } finally {
+        }
+        finally
+        {
             ffmpeg.av_dict_free(&rawOpts);
         }
 
@@ -126,22 +150,25 @@ public unsafe class MediaDemuxer : FFObject
     {
         ThrowIfDisposed();
 
-        if (Streams[stream.Index] != stream) {
+        if (Streams[stream.Index] != stream)
+        {
             throw new ArgumentException("Specified stream is not owned by the demuxer.");
         }
 
         var codecId = stream.Handle->codecpar->codec_id;
-        var decoder = stream.Type switch {
+        var decoder = stream.Type switch
+        {
             MediaTypes.Audio => new AudioDecoder(codecId) as MediaDecoder,
             MediaTypes.Video => new VideoDecoder(codecId),
             _ => throw new NotSupportedException($"Stream type {stream.Type} is not supported."),
         };
         ffmpeg.avcodec_parameters_to_context(decoder.Handle, stream.Handle->codecpar).CheckError("Could not copy stream parameters to the decoder.");
-        
+
         // Fixup some unset properties for consistency 
         decoder.TimeBase = stream.TimeBase;
 
-        if (stream.Type == MediaTypes.Video && decoder.FrameRate == Rational.Zero) {
+        if (stream.Type == MediaTypes.Video && decoder.FrameRate == Rational.Zero)
+        {
             decoder.FrameRate = GuessFrameRate(stream);
         }
 
@@ -157,7 +184,8 @@ public unsafe class MediaDemuxer : FFObject
 
         int result = ffmpeg.av_read_frame(_ctx, packet.UnrefAndGetHandle());
 
-        if (result < 0 && result != ffmpeg.AVERROR_EOF) {
+        if (result < 0 && result != ffmpeg.AVERROR_EOF)
+        {
             result.ThrowError("Failed to read packet");
         }
         return result >= 0;
@@ -172,19 +200,24 @@ public unsafe class MediaDemuxer : FFObject
     {
         ThrowIfDisposed();
 
-        if (!CanSeek) {
+        if (!CanSeek)
+        {
             throw new InvalidOperationException("Backing IO context is not seekable.");
         }
 
         int streamIndex;
         long ts;
-        if (stream is { }) {
+        if (stream is { })
+        {
             streamIndex = stream.Index;
-            if (Streams[streamIndex] != stream) {
+            if (Streams[streamIndex] != stream)
+            {
                 throw new ArgumentException("Specified stream is not owned by the demuxer.");
             }
             ts = ffmpeg.av_rescale_q(timestamp.Ticks, new Rational(1, (int)TimeSpan.TicksPerSecond), stream.TimeBase);
-        } else {
+        }
+        else
+        {
             streamIndex = -1;
             ts = ffmpeg.av_rescale(timestamp.Ticks, ffmpeg.AV_TIME_BASE, TimeSpan.TicksPerSecond);
         }
@@ -196,7 +229,8 @@ public unsafe class MediaDemuxer : FFObject
     {
         ThrowIfDisposed();
 
-        if (Streams[stream.Index] != stream) {
+        if (Streams[stream.Index] != stream)
+        {
             throw new ArgumentException("Specified stream is not owned by the demuxer.");
         }
 
@@ -205,16 +239,19 @@ public unsafe class MediaDemuxer : FFObject
 
     protected override void Free()
     {
-        if (_ctx != null && _ownsCtx) {
+        if (_ctx != null && _ownsCtx)
+        {
             fixed (AVFormatContext** c = &_ctx) ffmpeg.avformat_close_input(c);
         }
-        if (!_iocLeaveOpen) {
+        if (!_iocLeaveOpen)
+        {
             IOC?.Dispose();
         }
     }
     private void ThrowIfDisposed()
     {
-        if (_ctx == null) {
+        if (_ctx == null)
+        {
             throw new ObjectDisposedException(nameof(MediaDemuxer));
         }
     }
