@@ -1,12 +1,13 @@
 ﻿using FFmpeg.Wrapper;
+using KcpPlayer.Core;
 using KcpPlayer.KCP;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 
-namespace KcpPlayer.Core
+namespace KcpPlayer.Services
 {
-    public class FFmpegService
+    public class MediaService : IMediaService
     {
         private ConcurrentQueue<VideoFrame> _videoFrames = new ConcurrentQueue<VideoFrame>();
 
@@ -21,17 +22,20 @@ namespace KcpPlayer.Core
         private MemoryStream? _streamStream;
         private IOContext? _ioContext;
 
-        private VideoStreamRenderer _renderHelper;
+        private VideoStreamRenderer? _renderHelper;
         private AvKcpServer? _avKcpServer;
 
         public int VideoWidth { get; private set; }
         public int VideoHeight { get; private set; }
         public bool IsDecoding { get; private set; }
 
-        public FFmpegService()
+        public MediaService()
         {
             FFmpeg.AutoGen.ffmpeg.RootPath = AppContext.BaseDirectory + "runtimes/win-x64/native";
+        }
 
+        public void InitializeVideoStreamRenderer()
+        {
             _renderHelper = new VideoStreamRenderer();
         }
 
@@ -62,7 +66,7 @@ namespace KcpPlayer.Core
                     _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
                 }
             }
-            
+
             _decoder.Open();
 
             VideoWidth = _decoder.Width;
@@ -134,7 +138,7 @@ namespace KcpPlayer.Core
 
         public unsafe void Render()
         {
-            if (_videoFrames.TryDequeue(out var frame))
+            if (_videoFrames.TryDequeue(out var frame) && _renderHelper != null)
             {
                 _renderHelper.DrawTexture(frame);
                 frame.Dispose();

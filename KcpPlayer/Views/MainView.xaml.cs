@@ -1,24 +1,29 @@
 ﻿using KcpPlayer.Utils;
-using KcpPlayer.ViewModel;
+using KcpPlayer.ViewModels;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Wpf;
+using Serilog;
 using System.Windows;
 
-namespace KcpPlayer.View
+namespace KcpPlayer.Views
 {
     /// <summary>
     /// Interaction logic for MainView.xaml
     /// </summary>
     public partial class MainView : Window
     {
+        private readonly ILogger _logger;
+
         private MainViewModel _viewModel;
         private double _dpiRatio = 1.0d;
         private TextBlockTraceListener _tbTraceListener;
 
-        public MainView()
+        public MainView(ILogger logger, MainViewModel mainView)
         {
             InitializeComponent();
+
+            _logger = logger;
 
             var glSettings = new GLWpfControlSettings
             {
@@ -29,7 +34,7 @@ namespace KcpPlayer.View
             };
             GlView.Start(glSettings);
 
-            _viewModel = new MainViewModel();
+            _viewModel = mainView;
             DataContext = _viewModel;
 
             _tbTraceListener = new TextBlockTraceListener(tb_TraceListener);
@@ -40,8 +45,14 @@ namespace KcpPlayer.View
 
         private void MainView_Loaded(object sender, RoutedEventArgs e)
         {
+            // 获取缩放比率
             PresentationSource source = PresentationSource.FromVisual(this);
             _dpiRatio = source.CompositionTarget.TransformToDevice.M11;
+
+            // 初始化渲染器
+            _viewModel.InitialiazeRender();
+
+            _logger.Information("Main window loaded.");
         }
 
         private double _counter = 0d;

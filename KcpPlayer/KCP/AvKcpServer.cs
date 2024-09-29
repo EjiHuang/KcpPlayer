@@ -1,4 +1,4 @@
-﻿using KcpPlayer.Core;
+﻿using KcpPlayer.Services;
 using System.Diagnostics;
 
 namespace KcpPlayer.KCP
@@ -6,7 +6,7 @@ namespace KcpPlayer.KCP
     public class AvKcpServer
     {
         private KcpClient _client;
-        private FFmpegService _ffmpegService;
+        private IMediaService _mediaService;
 
         private Task _taskForUpdateState;
         private Task? _taskForRecv;
@@ -14,7 +14,7 @@ namespace KcpPlayer.KCP
 
         private bool _connected;
 
-        public AvKcpServer(int port, FFmpegService ffmpegService, TraceListener? traceListener = null)
+        public AvKcpServer(int port, IMediaService mediaService, TraceListener? traceListener = null)
         {
             _client = new KcpClient(port);
             if (traceListener == null)
@@ -22,7 +22,7 @@ namespace KcpPlayer.KCP
                 _client.Kcp.TraceListener = new ConsoleTraceListener();
             }
 
-            _ffmpegService = ffmpegService;
+            _mediaService = mediaService;
 
             _taskForUpdateState = Task.Run(async () =>
             {
@@ -74,7 +74,7 @@ namespace KcpPlayer.KCP
                     var message = System.Text.Encoding.UTF8.GetString(data);
                     if (message == "hb")
                     {
-                        _ffmpegService.RegisterAvKcpServer(this);
+                        _mediaService.RegisterAvKcpServer(this);
                         _connected = true;
                     }
                 }
