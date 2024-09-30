@@ -1,0 +1,118 @@
+﻿<Window
+    x:Class="KcpPlayer.Views.MainView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:glWpfControl="clr-namespace:OpenTK.Wpf;assembly=GLWpfControl"
+    xmlns:local="clr-namespace:KcpPlayer"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+    xmlns:vm="clr-namespace:KcpPlayer.ViewModels"
+    Title="Kcp Player"
+    Width="960"
+    Height="680"
+    d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+    ui:Design.Background="{DynamicResource ApplicationBackgroundBrush}"
+    ui:Design.Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    Background="{DynamicResource ApplicationBackgroundBrush}"
+    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
+        <Grid>
+            <glWpfControl:GLWpfControl
+                x:Name="GlView"
+                Margin="2"
+                Render="GlView_Render" />
+            <ui:TextBlock
+                x:Name="tb_TraceListener"
+                Width="auto"
+                Height="150"
+                Margin="10"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Bottom" />
+        </Grid>
+        <Grid Grid.Row="1" Margin="10,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="500" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <DockPanel>
+                <ui:TextBlock
+                    Margin="0,0,10,0"
+                    VerticalAlignment="Center"
+                    Text="URL" />
+                <ComboBox
+                    IsEditable="True"
+                    ItemsSource="{Binding Urls}"
+                    Text="{Binding Url}" />
+            </DockPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <ui:Button
+                    Width="80"
+                    Margin="10,0"
+                    Command="{Binding VideoPlayCommand}"
+                    Content="Play" />
+                <ui:Button
+                    Width="80"
+                    Command="{Binding VideoStopCommand}"
+                    Content="Stop" />
+            </StackPanel>
+            <StackPanel
+                Grid.Column="2"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <TextBlock
+                    x:Name="tb_Resolution"
+                    Margin="10,0,10,0"
+                    Text="W 0 H 0" />
+                <TextBlock
+                    x:Name="tb_Fps"
+                    Width="70"
+                    Text="FPS 0" />
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="2" Margin="10,5">
+            <StackPanel Orientation="Horizontal">
+                <ui:TextBlock VerticalAlignment="Center" Text="KCP Port" />
+                <ui:TextBox
+                    Width="90"
+                    Margin="10,0,0,0"
+                    Text="{Binding KcpPort}" />
+                <ui:Button
+                    Margin="10,0,0,0"
+                    Command="{Binding StartKcpServerCommand}"
+                    Content="Start Server" />
+                <ui:Button Margin="10,0,0,0" Content="Stop Server" />
+            </StackPanel>
+            <StackPanel
+                Grid.Column="2"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <ui:TextBlock Margin="10,0,10,0" Text="Server" />
+                <ui:TextBlock>
+                    <ui:TextBlock.Style>
+                        <Style TargetType="ui:TextBlock">
+                            <Setter Property="Text" Value="off" />
+                            <Setter Property="Foreground" Value="Red" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding KcpServerRunning}" Value="true">
+                                    <Setter Property="Text" Value="on" />
+                                    <Setter Property="Foreground" Value="Green" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:TextBlock.Style>
+                </ui:TextBlock>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

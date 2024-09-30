@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,12 +22,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+    <PackageReference Include="DirectShowLib.Standard" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="OpenTK.GLWpfControl" Version="4.3.2" />
-    <PackageReference Include="Sdcb.FFmpeg" Version="7.0.0" />
     <PackageReference Include="Sdcb.FFmpeg.runtime.windows-x64" Version="7.0.0" />
-    <PackageReference Include="StbImageSharp" Version="2.27.14" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     <PackageReference Include="WPF-UI" Version="3.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FFmpegWrapper\FFmpegWrapper.csproj" />
+    <ProjectReference Include="..\Kcp\Kcp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
