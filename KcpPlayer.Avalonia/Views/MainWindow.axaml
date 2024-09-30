@@ -4,26 +4,57 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:opentk="using:KcpPlayer.Avalonia.Controls.OpenTkControl"
     xmlns:u="https://irihi.tech/ursa"
     xmlns:vm="using:KcpPlayer.Avalonia.ViewModels"
     Title="KcpPlayer.Avalonia"
+    Width="800"
+    Height="450"
     d:DesignHeight="450"
     d:DesignWidth="800"
     x:DataType="vm:MainWindowViewModel"
     Icon="/Assets/avalonia-logo.ico"
+    WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
 
-    <Design.DataContext>
+    <!--<Design.DataContext>
         <vm:MainWindowViewModel />
-    </Design.DataContext>
+    </Design.DataContext>-->
 
     <Grid>
-        <StackPanel Margin="20">
-            <u:ButtonGroup Classes="Solid Warning">
-                <Button Content="Hello" />
-                <Button Content="World" />
-            </u:ButtonGroup>
-        </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="auto" />
+        </Grid.RowDefinitions>
+        <opentk:OpenTkControl x:Name="OpenGlControlHost" />
+        <Grid Grid.Row="1" Margin="10,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="400" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <DockPanel>
+                <TextBlock
+                    Margin="0,0,10,0"
+                    VerticalAlignment="Center"
+                    Text="Url" />
+                <ComboBox
+                    MinWidth="360"
+                    ItemsSource="{Binding Urls}"
+                    SelectedValue="{Binding Url}" />
+            </DockPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button
+                    Width="80"
+                    Margin="10,0"
+                    Command="{Binding PlayVideoCommand}"
+                    Content="Play" />
+                <Button
+                    Width="80"
+                    Command="{Binding StopVideoCommand}"
+                    Content="Stop" />
+            </StackPanel>
+        </Grid>
     </Grid>
 
 </Window>

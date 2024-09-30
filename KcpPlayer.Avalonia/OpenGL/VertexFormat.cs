@@ -1,10 +1,10 @@
-﻿using System;
+﻿using OpenTK.Graphics.OpenGL4;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using OpenTK.Graphics.OpenGL4;
 
 namespace KcpPlayer.Avalonia.OpenGL;
 

@@ -50,7 +50,7 @@ namespace KcpPlayer.Views
             _dpiRatio = source.CompositionTarget.TransformToDevice.M11;
 
             // 初始化渲染器
-            _viewModel.InitialiazeRender();
+            _viewModel.InitialiazeRenderer();
 
             _logger.Information("Main window loaded.");
         }

@@ -31,7 +31,7 @@ public partial class App : Application
         {
             desktop.MainWindow = new MainWindow
             {
-                DataContext = vm,
+                ViewModel = vm
             };
         }
 
@@ -53,7 +53,7 @@ public partial class App : Application
                 .CreateLogger();
         });
         services.AddTransient<IMediaService, MediaService>();
-        services.AddTransient<IVideoStreamRendererService, VideoStreamRenderer>();
+        services.AddTransient<IVideoStreamRendererService, VideoStreamRendererService>();
         services.AddTransient<MainWindowViewModel>();
 
         return services.BuildServiceProvider(

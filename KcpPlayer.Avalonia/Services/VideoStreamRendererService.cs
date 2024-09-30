@@ -1,13 +1,13 @@
-﻿using System;
-using System.Diagnostics;
-using FFmpeg.AutoGen;
+﻿using FFmpeg.AutoGen;
 using FFmpeg.Wrapper;
 using KcpPlayer.Avalonia.OpenGL;
 using OpenTK.Graphics.OpenGL4;
+using System;
+using System.Diagnostics;
 
 namespace KcpPlayer.Avalonia.Services;
 
-public class VideoStreamRenderer : IVideoStreamRendererService
+public class VideoStreamRendererService : IVideoStreamRendererService
 {
     private bool _hasFrame = false;
     private bool _isHDR = false;
@@ -21,7 +21,7 @@ public class VideoStreamRenderer : IVideoStreamRendererService
     private bool _flushed = false;
     private SwScaler? _nv12SwScaler;
 
-    public VideoStreamRenderer()
+    public VideoStreamRendererService()
     {
         string shaderBasePath = AppContext.BaseDirectory + "Shaders/";
         _shader = new ShaderProgram();

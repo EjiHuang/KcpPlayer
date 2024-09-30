@@ -24,7 +24,7 @@ public class MediaService : IMediaService
     private MemoryStream? _streamStream;
     private IOContext? _ioContext;
 
-    private VideoStreamRenderer? _renderHelper;
+    private VideoStreamRendererService? _renderHelper;
 
     public int VideoWidth { get; private set; }
     public int VideoHeight { get; private set; }
@@ -37,7 +37,7 @@ public class MediaService : IMediaService
 
     public void InitializeVideoStreamRenderer()
     {
-        _renderHelper = new VideoStreamRenderer();
+        _renderHelper = new VideoStreamRendererService();
     }
 
     public async Task DecodeFromStreamAsync(Stream stream)
@@ -141,6 +141,7 @@ public class MediaService : IMediaService
         IsDecoding = false;
     }
 
+    private object _lock = new object();
     public unsafe void Render()
     {
         if (_videoFrames.TryDequeue(out var frame) && _renderHelper != null)

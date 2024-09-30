@@ -89,7 +89,7 @@ namespace KcpPlayer.ViewModels
             KcpServerRunning = true;
         }
 
-        public void InitialiazeRender()
+        public void InitialiazeRenderer()
         {
             // 初始化渲染器
             _mediaService.InitializeVideoStreamRenderer();

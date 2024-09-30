@@ -1,10 +1,10 @@
-﻿using System;
+﻿using OpenTK.Graphics.OpenGL4;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using OpenTK.Graphics.OpenGL4;
 
 namespace KcpPlayer.Avalonia.OpenGL
 {
@@ -31,10 +31,18 @@ namespace KcpPlayer.Avalonia.OpenGL
             int baseInstance = 0
         )
         {
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.CullFace);
+
+            GL.ClearColor(0, 0, 0, 1);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
             GL.UseProgram(Id);
             GL.BindVertexArray(format.Id);
             GL.VertexArrayVertexBuffer(format.Id, 0, vertices.Id, 0, format.Stride);
             GL.DrawArraysInstancedBaseInstance(mode, offset, count, numInstances, baseInstance);
+
+            GL.Disable(EnableCap.DepthTest);
         }
 
         public void DrawElements(
