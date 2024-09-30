@@ -1,9 +1,9 @@
-﻿using FFmpeg.Wrapper;
-using KcpPlayer.Core;
-using KcpPlayer.KCP;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using FFmpeg.Wrapper;
+using KcpPlayer.Core;
+using KcpPlayer.KCP;
 
 namespace KcpPlayer.Services
 {
@@ -50,15 +50,19 @@ namespace KcpPlayer.Services
             _demuxer = await Task.Run(() => new MediaDemuxer(url));
 
             _stream = _demuxer.FindBestStream(MediaTypes.Video);
-            if (_stream == null) return;
+            if (_stream == null)
+                return;
 
             _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
-            if (_decoder == null) return;
+            if (_decoder == null)
+                return;
 
             var hwConfigs = _decoder.GetHardwareConfigs();
             if (hwConfigs != null && hwConfigs.Count > 0)
             {
-                var hwConfig = hwConfigs.FirstOrDefault(config => config.DeviceType == HWDeviceTypes.DXVA2);
+                var hwConfig = hwConfigs.FirstOrDefault(config =>
+                    config.DeviceType == HWDeviceTypes.DXVA2
+                );
                 _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
 
                 if (_hwDevice != null)

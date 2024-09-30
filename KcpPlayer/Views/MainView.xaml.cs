@@ -1,10 +1,10 @@
-﻿using KcpPlayer.Utils;
+﻿using System.Windows;
+using KcpPlayer.Utils;
 using KcpPlayer.ViewModels;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using OpenTK.Wpf;
 using Serilog;
-using System.Windows;
 
 namespace KcpPlayer.Views
 {
@@ -30,7 +30,7 @@ namespace KcpPlayer.Views
                 MajorVersion = 4,
                 MinorVersion = 5,
                 Profile = ContextProfile.Compatability,
-                ContextFlags = ContextFlags.Debug
+                ContextFlags = ContextFlags.Debug,
             };
             GlView.Start(glSettings);
 
@@ -56,6 +56,7 @@ namespace KcpPlayer.Views
         }
 
         private double _counter = 0d;
+
         private void GlView_Render(TimeSpan delta)
         {
             var videoWidth = _viewModel.VideoWidth;
@@ -63,7 +64,10 @@ namespace KcpPlayer.Views
             var clientWidth = (int)(GlView.ActualWidth * _dpiRatio);
             var clientHeight = (int)(GlView.ActualHeight * _dpiRatio);
 
-            double scale = Math.Min(clientWidth / (double)videoWidth, clientHeight / (double)videoHeight);
+            double scale = Math.Min(
+                clientWidth / (double)videoWidth,
+                clientHeight / (double)videoHeight
+            );
             int w = (int)Math.Round(videoWidth * scale);
             int h = (int)Math.Round(videoHeight * scale);
             int x = (clientWidth - w) / 2;

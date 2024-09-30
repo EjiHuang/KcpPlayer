@@ -1,14 +1,14 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using System.Collections.ObjectModel;
+using System.Net;
+using System.Windows;
+using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KcpPlayer.Core;
 using KcpPlayer.KCP;
 using KcpPlayer.Services;
 using KcpPlayer.Utils;
 using Serilog;
-using System.Collections.ObjectModel;
-using System.Net;
-using System.Windows;
-using System.Windows.Input;
 
 namespace KcpPlayer.ViewModels
 {
@@ -30,7 +30,9 @@ namespace KcpPlayer.ViewModels
 
             // 初始化数据绑定
             Urls.Add("rtsp://rtspstream:f653638d5e1d579e7ba0aaf97e9e54ac@zephyr.rtsp.stream/movie");
-            Urls.Add("rtsp://rtspstream:ab0fed99d825e52d589af4e91a1842d0@zephyr.rtsp.stream/pattern");
+            Urls.Add(
+                "rtsp://rtspstream:ab0fed99d825e52d589af4e91a1842d0@zephyr.rtsp.stream/pattern"
+            );
             Urls.Add("kcp://127.0.0.1:40001");
             var cameraDevices = FFmpegCameraManager.GetCameraDevices();
             if (cameraDevices != null)
@@ -52,7 +54,11 @@ namespace KcpPlayer.ViewModels
                     var ip = uri.Host;
                     var port = uri.Port;
 
-                    _avKcpClient = new AvKcpClient(port + 1, new IPEndPoint(IPAddress.Parse(ip), port), null);
+                    _avKcpClient = new AvKcpClient(
+                        port + 1,
+                        new IPEndPoint(IPAddress.Parse(ip), port),
+                        null
+                    );
                     _avKcpClient.Start();
 
                     //await _ffmpegService.DecodeFromStreamAsync(_avKcpClient.Stream);
@@ -97,7 +103,7 @@ namespace KcpPlayer.ViewModels
         public int VideoWidth => _mediaService.VideoWidth;
         public int VideoHeight => _mediaService.VideoHeight;
 
-        private string _url = "kcp://127.0.0.1:40001";//"rtsp://192.168.48.1:8554/channel=0";
+        private string _url = "kcp://127.0.0.1:40001"; //"rtsp://192.168.48.1:8554/channel=0";
         public string Url
         {
             get => _url;
@@ -119,12 +125,15 @@ namespace KcpPlayer.ViewModels
         }
 
         private AsyncRelayCommand? _videoPlayCommand;
-        public ICommand VideoPlayCommand => _videoPlayCommand ??= new AsyncRelayCommand(VideoPlayAsync);
+        public ICommand VideoPlayCommand =>
+            _videoPlayCommand ??= new AsyncRelayCommand(VideoPlayAsync);
 
         private AsyncRelayCommand? _videoStopCommand;
-        public ICommand VideoStopCommand => _videoStopCommand ??= new AsyncRelayCommand(VideoStopAsync);
+        public ICommand VideoStopCommand =>
+            _videoStopCommand ??= new AsyncRelayCommand(VideoStopAsync);
 
         private RelayCommand? _startKcpServerCommand;
-        public ICommand StartKcpServerCommand => _startKcpServerCommand ??= new RelayCommand(StartKcpServer);
+        public ICommand StartKcpServerCommand =>
+            _startKcpServerCommand ??= new RelayCommand(StartKcpServer);
     }
 }
