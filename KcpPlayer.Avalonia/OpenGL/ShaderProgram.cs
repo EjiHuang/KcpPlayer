@@ -31,18 +31,10 @@ namespace KcpPlayer.Avalonia.OpenGL
             int baseInstance = 0
         )
         {
-            GL.Enable(EnableCap.DepthTest);
-            GL.Enable(EnableCap.CullFace);
-
-            GL.ClearColor(0, 0, 0, 1);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-
             GL.UseProgram(Id);
             GL.BindVertexArray(format.Id);
             GL.VertexArrayVertexBuffer(format.Id, 0, vertices.Id, 0, format.Stride);
             GL.DrawArraysInstancedBaseInstance(mode, offset, count, numInstances, baseInstance);
-
-            GL.Disable(EnableCap.DepthTest);
         }
 
         public void DrawElements(

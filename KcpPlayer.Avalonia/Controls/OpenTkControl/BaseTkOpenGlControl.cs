@@ -12,7 +12,7 @@ namespace KcpPlayer.Avalonia.Controls.OpenTkControl;
 public abstract class BaseTkOpenGlControl : OpenGlControlBase, ICustomHitTest
 {
     private AvaloniaTkContext? _avaloniaTkContext;
-    private GlInterface? gl;
+    private GlInterface? _gl;
 
     /// <summary>
     /// OpenTkRender is called once a frame to draw to the control.
@@ -37,8 +37,13 @@ public abstract class BaseTkOpenGlControl : OpenGlControlBase, ICustomHitTest
 
     protected override void OnOpenGlRender(GlInterface gl, int fb)
     {
-        this.gl = gl;
-        
+        this._gl = gl;
+
+        //PixelSize size = GetPixelSize();
+
+        //Set up the aspect ratio so shapes aren't stretched.
+        //GL.Viewport(0, 0, size.Width, size.Height);
+
         // Tell our subclass to render
         if (Bounds.Width != 0 && Bounds.Height != 0)
         {
@@ -69,7 +74,7 @@ public abstract class BaseTkOpenGlControl : OpenGlControlBase, ICustomHitTest
 
     public GlInterface? getGLInterface()
     {
-        return gl;
+        return _gl;
     }
 
     private PixelSize GetPixelSize()
