@@ -125,6 +125,7 @@ public class MediaService : IMediaService
                     if (_decoder!.ReceiveFrame(frame))
                     {
                         _videoFrames.Enqueue(frame);
+                        _callbackForRender?.Invoke();
                     }
                 }
                 else
@@ -141,13 +142,34 @@ public class MediaService : IMediaService
         IsDecoding = false;
     }
 
-    private object _lock = new object();
-    public unsafe void Render()
+    private Action? _callbackForRender;
+
+    public unsafe void RenderVideo()
     {
         if (_videoFrames.TryDequeue(out var frame) && _renderHelper != null)
         {
             _renderHelper.DrawTexture(frame);
             frame.Dispose();
         }
+    }
+
+    internal void SetRenderCallback(Action value)
+    {
+        _callbackForRender = value;
+    }
+
+    internal void SetVideoSurfaceSize(int width, int height)
+    {
+        var scale = Math.Min(
+            width / (double)VideoWidth,
+            height / (double)VideoHeight
+        );
+
+        int w = (int)Math.Round(VideoWidth * scale);
+        int h = (int)Math.Round(VideoHeight * scale);
+        int x = (width - w) / 2;
+        int y = (height - h) / 2;
+
+        _renderHelper?.ReSetVideoSurfaceSize(x, y, w, h);
     }
 }

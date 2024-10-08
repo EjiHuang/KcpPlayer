@@ -149,4 +149,17 @@ public class VideoStreamRendererService : IVideoStreamRendererService
         _shader.SetUniform("u_ConvertHDRtoSDR", _isHDR ? 1 : 0);
         _shader.DrawArrays(PrimitiveType.Triangles, _emptyVao, _emptyVbo, 0, 3);
     }
+
+    public void ReSetVideoSurfaceSize(int x, int y, int w, int h)
+    {
+        //GL.Enable(EnableCap.DepthTest);
+        //GL.Enable(EnableCap.CullFace);
+
+        //GL.ClearColor(new OpenTK.Mathematics.Color4(0, 32, 48, 255));
+        //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
+        GL.Viewport(x, y, w, h);
+
+        //GL.Disable(EnableCap.DepthTest);
+    }
 }

@@ -52,8 +52,8 @@ public partial class App : Application
                 )
                 .CreateLogger();
         });
-        services.AddTransient<IMediaService, MediaService>();
-        services.AddTransient<IVideoStreamRendererService, VideoStreamRendererService>();
+        //services.AddTransient<IMediaService, MediaService>();
+        //services.AddTransient<IVideoStreamRendererService, VideoStreamRendererService>();
         services.AddTransient<MainWindowViewModel>();
 
         return services.BuildServiceProvider(

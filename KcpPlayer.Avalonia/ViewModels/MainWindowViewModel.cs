@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
+using KcpPlayer.Avalonia.Controls.OpenTkControl;
 using KcpPlayer.Avalonia.Services;
 using KcpPlayer.Avalonia.Utils;
 using Serilog;
@@ -12,14 +13,11 @@ namespace KcpPlayer.Avalonia.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly ILogger _logger;
-    private readonly IMediaService _mediaService;
+    private IOpenTkPlayer? _player;
 
     public ObservableCollection<string> Urls { get; set; } = [];
 
     #region properties
-
-    public int VideoWidth => _mediaService.VideoWidth;
-    public int VideoHeight => _mediaService.VideoHeight;
 
     private string _url = "rtsp://127.0.0.1:8554/live/0";
     public string Url
@@ -30,12 +28,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     #endregion
 
-    public MainWindowViewModel(ILogger logger, IMediaService mediaService)
+    public MainWindowViewModel(ILogger logger/*, IMediaService mediaService*/)
     {
         _logger = logger;
-        _mediaService = mediaService;
 
         // 初始化数据绑定
+        Urls.Add("rtsp://192.168.0.116:8554/cam");
         Urls.Add("rtsp://127.0.0.1:8554/live/0");
         Urls.Add("rtsp://rtspstream:f653638d5e1d579e7ba0aaf97e9e54ac@zephyr.rtsp.stream/movie");
         Urls.Add("rtsp://rtspstream:ab0fed99d825e52d589af4e91a1842d0@zephyr.rtsp.stream/pattern");
@@ -51,13 +49,18 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public void SetOpenTkPlayer(IOpenTkPlayer player)
+    {
+        _player = player;
+    }
+
     /// <summary>
     /// 初始化渲染器
     /// </summary>
     public void InitialiazeRenderer()
     {
         // 初始化渲染器
-        _mediaService.InitializeVideoStreamRenderer();
+        //_mediaService.InitializeVideoStreamRenderer();
     }
 
     /// <summary>
@@ -65,33 +68,34 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     public void VideoRender()
     {
-        _mediaService.Render();
+        //_mediaService.Render();
     }
 
     [RelayCommand]
     private async Task PlayVideoAsync()
     {
-        try
-        {
-            if (Url.StartsWith("kcp://", StringComparison.InvariantCultureIgnoreCase))
-            {
-                await _mediaService.DecodeRTSPAsync("udp://127.0.0.1:40002");
-            }
-            else
-            {
-                await _mediaService.DecodeRTSPAsync(Url);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, ex.Message);
-            await MessageBox.ShowAsync(ex.Message);
-        }
+        var result = await _player!.PlayVideoAsync(Url);
+        //try
+        //{
+        //    if (Url.StartsWith("kcp://", StringComparison.InvariantCultureIgnoreCase))
+        //    {
+        //        await _mediaService.DecodeRTSPAsync("udp://127.0.0.1:40002");
+        //    }
+        //    else
+        //    {
+        //        await _mediaService.DecodeRTSPAsync(Url);
+        //    }
+        //}
+        //catch (Exception ex)
+        //{
+        //    _logger.Error(ex, ex.Message);
+        //    await MessageBox.ShowAsync(ex.Message);
+        //}
     }
 
     [RelayCommand]
     private async Task StopVideoAsync()
     {
-        await _mediaService.StopVideoAsync();
+        //await _mediaService.StopVideoAsync();
     }
 }

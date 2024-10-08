@@ -17,7 +17,7 @@ public class OpenTkControl : BaseTkOpenGlControl
 
         OnInitializing?.Invoke();
 
-        Debug.WriteLine("GL component initialized");
+        Debug.WriteLine($"GL component initialized. OpenGL version: {GlVersion.Major}.{GlVersion.Minor}");
     }
 
     protected override void OpenTkRender()
@@ -25,7 +25,7 @@ public class OpenTkControl : BaseTkOpenGlControl
         //GL.Enable(EnableCap.DepthTest);
         //GL.Enable(EnableCap.CullFace);
 
-        //GL.ClearColor(new Color4(0, 32, 48, 255));
+        //GL.ClearColor(new OpenTK.Mathematics.Color4(0, 32, 48, 255));
         //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
         OnRender?.Invoke();

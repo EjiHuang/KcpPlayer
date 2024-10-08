@@ -27,49 +27,54 @@ namespace KcpPlayer.Avalonia.Views
         {
             InitializeComponent();
 
-            OpenGlControlHost.OnInitializing += OnOpenGlControlInitializing;
-            OpenGlControlHost.OnRender += OnOpenGlRender;
+            //OpenGlControlHost.OnInitializing += OnOpenGlControlInitializing;
+            //OpenGlControlHost.OnRender += OnOpenGlRender;
+
+            Loaded += (_, _) =>
+            {
+                _viewModel?.SetOpenTkPlayer(OpenGlControlHost);
+            };
         }
 
         private void OnOpenGlRender()
         {
-            var scaling = GetTopLevel(OpenGlControlHost)!.RenderScaling;
-            var videoWidth = ViewModel!.VideoWidth;
-            var videoHeight = ViewModel.VideoHeight;
-            var clientWidth = Math.Max(1, (int)(OpenGlControlHost.Bounds.Width * scaling));
-            var clientHeight = Math.Max(1, (int)(OpenGlControlHost.Bounds.Height * scaling));
-            var scale = Math.Min(
-                clientWidth / (double)videoWidth,
-                clientHeight / (double)videoHeight
-            );
+            //var scaling = GetTopLevel(OpenGlControlHost)!.RenderScaling;
+            //var videoWidth = ViewModel!.VideoWidth;
+            //var videoHeight = ViewModel.VideoHeight;
+            //var clientWidth = Math.Max(1, (int)(OpenGlControlHost.Bounds.Width * scaling));
+            //var clientHeight = Math.Max(1, (int)(OpenGlControlHost.Bounds.Height * scaling));
+            //var scale = Math.Min(
+            //    clientWidth / (double)videoWidth,
+            //    clientHeight / (double)videoHeight
+            //);
 
-            int w = (int)Math.Round(videoWidth * scale);
-            int h = (int)Math.Round(videoHeight * scale);
-            int x = (clientWidth - w) / 2;
-            int y = (clientHeight - h) / 2;
+            //int w = (int)Math.Round(videoWidth * scale);
+            //int h = (int)Math.Round(videoHeight * scale);
+            //int x = (clientWidth - w) / 2;
+            //int y = (clientHeight - h) / 2;
 
-            if (_openTkControlWidth != w || _openTkControlHeight != h)
-            {
-                _openTkControlWidth = w;
-                _openTkControlHeight = h;
+            //if (_openTkControlWidth != w || _openTkControlHeight != h)
+            //{
+            //    _openTkControlWidth = w;
+            //    _openTkControlHeight = h;
 
-                //FIXME: flickering after resize (caused by double buffering)
-                GL.Viewport(0, 0, clientWidth, clientHeight);
-                GL.Clear(ClearBufferMask.ColorBufferBit);
-                GL.Viewport(x, y, w, h);
-            }
+            //    //FIXME: flickering after resize (caused by double buffering)
+            //    GL.Viewport(0, 0, clientWidth, clientHeight);
+            //    GL.Clear(ClearBufferMask.ColorBufferBit);
+            //    GL.Viewport(x, y, w, h);
+            //}
 
-            // 渲染视频帧
-            ViewModel.VideoRender();
+            //// 渲染视频帧
+            //ViewModel.VideoRender();
         }
 
         private void OnOpenGlControlInitializing()
         {
-            // 获取缩放比率
-            _dpiRatio = RenderScaling;
+            //// 获取缩放比率
+            //_dpiRatio = RenderScaling;
 
-            // 初始化渲染器
-            ViewModel!.InitialiazeRenderer();
+            //// 初始化渲染器
+            //ViewModel!.InitialiazeRenderer();
         }
     }
 }

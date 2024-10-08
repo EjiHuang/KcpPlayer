@@ -12,5 +12,5 @@ public interface IMediaService
     public Task DecodeRTSPAsync(string url);
     public Task StopVideoAsync();
     public void InitializeVideoStreamRenderer();
-    public unsafe void Render();
+    public unsafe void RenderVideo();
 }
