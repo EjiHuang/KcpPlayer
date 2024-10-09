@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.Input;
+﻿using CommunityToolkit.Mvvm.Input;
 using KcpPlayer.Avalonia.Controls.OpenTkControl;
-using KcpPlayer.Avalonia.Services;
 using KcpPlayer.Avalonia.Utils;
 using Serilog;
-using Ursa.Controls;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 
 namespace KcpPlayer.Avalonia.ViewModels;
 
@@ -54,48 +51,15 @@ public partial class MainWindowViewModel : ViewModelBase
         _player = player;
     }
 
-    /// <summary>
-    /// 初始化渲染器
-    /// </summary>
-    public void InitialiazeRenderer()
-    {
-        // 初始化渲染器
-        //_mediaService.InitializeVideoStreamRenderer();
-    }
-
-    /// <summary>
-    /// 渲染视频帧
-    /// </summary>
-    public void VideoRender()
-    {
-        //_mediaService.Render();
-    }
-
     [RelayCommand]
     private async Task PlayVideoAsync()
     {
         var result = await _player!.PlayVideoAsync(Url);
-        //try
-        //{
-        //    if (Url.StartsWith("kcp://", StringComparison.InvariantCultureIgnoreCase))
-        //    {
-        //        await _mediaService.DecodeRTSPAsync("udp://127.0.0.1:40002");
-        //    }
-        //    else
-        //    {
-        //        await _mediaService.DecodeRTSPAsync(Url);
-        //    }
-        //}
-        //catch (Exception ex)
-        //{
-        //    _logger.Error(ex, ex.Message);
-        //    await MessageBox.ShowAsync(ex.Message);
-        //}
     }
 
     [RelayCommand]
     private async Task StopVideoAsync()
     {
-        //await _mediaService.StopVideoAsync();
+        await _player!.StopVideoAsync();
     }
 }

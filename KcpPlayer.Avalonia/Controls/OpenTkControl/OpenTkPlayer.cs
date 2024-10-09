@@ -1,4 +1,6 @@
-﻿using Avalonia;
+﻿using System;
+using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.OpenGL;
 using Avalonia.OpenGL.Controls;
@@ -6,8 +8,6 @@ using Avalonia.Threading;
 using KcpPlayer.Avalonia.Services;
 using OpenTK.Graphics.OpenGL4;
 using Serilog;
-using System;
-using System.Threading.Tasks;
 using Ursa.Controls;
 
 namespace KcpPlayer.Avalonia.Controls.OpenTkControl;
@@ -26,12 +26,6 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
     public OpenTkPlayer()
     {
         _mediaService = new MediaService();
-        _mediaService.SetRenderCallback(() =>
-        {
-            // Schedule next UI update with avalonia
-            //Dispatcher.UIThread.Post(RequestNextFrameRendering, DispatcherPriority.Background);
-            Dispatcher.UIThread.InvokeAsync(RequestNextFrameRendering, DispatcherPriority.Background);
-        });
     }
 
     protected override void OnOpenGlRender(GlInterface gl, int fb)
@@ -43,24 +37,22 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
             _mediaService.SetVideoSurfaceSize(pixelSize.Width, pixelSize.Height);
         }
 
-        //_mediaService.SetVideoSurfaceSize(pixelSize.Width, pixelSize.Height);
+        GL.Enable(EnableCap.DepthTest);
+        GL.Enable(EnableCap.CullFace);
 
-        //GL.Viewport(0, 0, pixelSize.Width, pixelSize.Height);
-        //GL.Clear(ClearBufferMask.ColorBufferBit);
-
-        //GL.Enable(EnableCap.DepthTest);
-        //GL.Enable(EnableCap.CullFace);
-
-        //GL.ClearColor(new OpenTK.Mathematics.Color4(0, 32, 48, 255));
-        //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        GL.ClearColor(new OpenTK.Mathematics.Color4(0, 0, 0, 255));
+        GL.Clear(
+            ClearBufferMask.ColorBufferBit
+                | ClearBufferMask.DepthBufferBit
+                | ClearBufferMask.StencilBufferBit
+        );
 
         _mediaService.SetVideoSurfaceSize(pixelSize.Width, pixelSize.Height);
 
         // 渲染视频帧
-        _mediaService.RenderVideo(pixelSize.Width, pixelSize.Height);
+        _mediaService.RenderVideo();
 
-        //GL.Disable(EnableCap.DepthTest);
-
+        GL.Disable(EnableCap.DepthTest);
 
         Dispatcher.UIThread.InvokeAsync(RequestNextFrameRendering, DispatcherPriority.Background);
     }
@@ -103,17 +95,34 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
         return false;
     }
 
+    public async Task StopVideoAsync()
+    {
+        try
+        {
+            await _mediaService.StopVideoAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, ex.Message);
+            await MessageBox.ShowAsync(ex.Message);
+        }
+    }
+
     private PixelSize GetPixelSize()
     {
         var scaling = TopLevel.GetTopLevel(this)!.RenderScaling;
-        return new PixelSize(Math.Max(1, (int)(Bounds.Width * scaling)),
-            Math.Max(1, (int)(Bounds.Height * scaling)));
+        return new PixelSize(
+            Math.Max(1, (int)(Bounds.Width * scaling)),
+            Math.Max(1, (int)(Bounds.Height * scaling))
+        );
     }
 
     #region properties
 
-    public static readonly StyledProperty<string> VideoPathProperty =
-        AvaloniaProperty.Register<OpenTkPlayer, string>(nameof(VideoPath), "");
+    public static readonly StyledProperty<string> VideoPathProperty = AvaloniaProperty.Register<
+        OpenTkPlayer,
+        string
+    >(nameof(VideoPath), "");
 
     public string VideoPath
     {

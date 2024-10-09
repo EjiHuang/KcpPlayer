@@ -5,4 +5,5 @@ namespace KcpPlayer.Avalonia.Controls.OpenTkControl;
 public interface IOpenTkPlayer
 {
     public Task<bool> PlayVideoAsync(string videoPath);
+    public Task StopVideoAsync();
 }

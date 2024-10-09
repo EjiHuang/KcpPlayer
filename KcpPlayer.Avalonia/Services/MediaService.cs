@@ -122,7 +122,6 @@ public class MediaService : IMediaService
                     if (_decoder!.ReceiveFrame(frame))
                     {
                         _videoFrames.Enqueue(frame);
-                        //_callbackForRender?.Invoke();
 
                         lock (_lock)
                         {
@@ -150,7 +149,7 @@ public class MediaService : IMediaService
     private static object _lock = new object();
     private Action? _callbackForRender;
 
-    public unsafe void RenderVideo(int width, int height)
+    public unsafe void RenderVideo()
     {
         lock (_lock)
         {
@@ -159,22 +158,6 @@ public class MediaService : IMediaService
                 _renderHelper.DrawTexture(frame);
             }
         }
-
-        //if (_videoFrames.TryPeek(out var frame) && _renderHelper != null)
-        //{
-        //    if (_videoFrames.Count == 0)
-        //    {
-        //        _renderHelper.DrawTexture(frame);
-        //    }
-
-        //    frame.Dispose();
-        //}
-
-        //if (_videoFrames.TryDequeue(out var frame) && _renderHelper != null)
-        //{
-        //    _renderHelper.DrawTexture(frame);
-        //    frame.Dispose();
-        //}
     }
 
     internal void SetRenderCallback(Action value)
