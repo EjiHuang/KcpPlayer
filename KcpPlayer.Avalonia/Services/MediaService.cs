@@ -118,14 +118,19 @@ public class MediaService : IMediaService
                     if (packet.StreamIndex != _stream!.Index)
                         continue;
 
-                    // Try to send avkcp packet
-                    //_avKcpServer?.SendAvPacket(packet.Data);
-
                     _decoder!.SendPacket(packet);
                     if (_decoder!.ReceiveFrame(frame))
                     {
                         _videoFrames.Enqueue(frame);
-                        _callbackForRender?.Invoke();
+                        //_callbackForRender?.Invoke();
+
+                        lock (_lock)
+                        {
+                            while (_videoFrames.Count > 1 && _videoFrames.TryDequeue(out var savedFrame))
+                            {
+                                savedFrame.Dispose();
+                            }
+                        }
                     }
                 }
                 else
@@ -142,15 +147,34 @@ public class MediaService : IMediaService
         IsDecoding = false;
     }
 
+    private static object _lock = new object();
     private Action? _callbackForRender;
 
-    public unsafe void RenderVideo()
+    public unsafe void RenderVideo(int width, int height)
     {
-        if (_videoFrames.TryDequeue(out var frame) && _renderHelper != null)
+        lock (_lock)
         {
-            _renderHelper.DrawTexture(frame);
-            frame.Dispose();
+            if (_videoFrames.TryPeek(out var frame) && _renderHelper != null)
+            {
+                _renderHelper.DrawTexture(frame);
+            }
         }
+
+        //if (_videoFrames.TryPeek(out var frame) && _renderHelper != null)
+        //{
+        //    if (_videoFrames.Count == 0)
+        //    {
+        //        _renderHelper.DrawTexture(frame);
+        //    }
+
+        //    frame.Dispose();
+        //}
+
+        //if (_videoFrames.TryDequeue(out var frame) && _renderHelper != null)
+        //{
+        //    _renderHelper.DrawTexture(frame);
+        //    frame.Dispose();
+        //}
     }
 
     internal void SetRenderCallback(Action value)
@@ -171,5 +195,6 @@ public class MediaService : IMediaService
         int y = (height - h) / 2;
 
         _renderHelper?.ReSetVideoSurfaceSize(x, y, w, h);
+        //Debug.WriteLine($"{x} {y} {w} {h}");
     }
 }

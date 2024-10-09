@@ -30,7 +30,7 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
         {
             // Schedule next UI update with avalonia
             //Dispatcher.UIThread.Post(RequestNextFrameRendering, DispatcherPriority.Background);
-            //Dispatcher.UIThread.InvokeAsync(RequestNextFrameRendering, DispatcherPriority.Background);
+            Dispatcher.UIThread.InvokeAsync(RequestNextFrameRendering, DispatcherPriority.Background);
         });
     }
 
@@ -43,10 +43,24 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
             _mediaService.SetVideoSurfaceSize(pixelSize.Width, pixelSize.Height);
         }
 
+        //_mediaService.SetVideoSurfaceSize(pixelSize.Width, pixelSize.Height);
+
+        //GL.Viewport(0, 0, pixelSize.Width, pixelSize.Height);
+        //GL.Clear(ClearBufferMask.ColorBufferBit);
+
+        //GL.Enable(EnableCap.DepthTest);
+        //GL.Enable(EnableCap.CullFace);
+
+        //GL.ClearColor(new OpenTK.Mathematics.Color4(0, 32, 48, 255));
+        //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
         _mediaService.SetVideoSurfaceSize(pixelSize.Width, pixelSize.Height);
 
         // 渲染视频帧
-        _mediaService.RenderVideo();
+        _mediaService.RenderVideo(pixelSize.Width, pixelSize.Height);
+
+        //GL.Disable(EnableCap.DepthTest);
+
 
         Dispatcher.UIThread.InvokeAsync(RequestNextFrameRendering, DispatcherPriority.Background);
     }

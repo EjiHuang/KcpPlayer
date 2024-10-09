@@ -158,6 +158,8 @@ public class VideoStreamRendererService : IVideoStreamRendererService
         //GL.ClearColor(new OpenTK.Mathematics.Color4(0, 32, 48, 255));
         //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
+        //GL.Viewport(0, 0, 800, 407);
+        //GL.Clear(ClearBufferMask.ColorBufferBit);
         GL.Viewport(x, y, w, h);
 
         //GL.Disable(EnableCap.DepthTest);
