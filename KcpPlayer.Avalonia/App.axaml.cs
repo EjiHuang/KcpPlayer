@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
 using KcpPlayer.Avalonia.Services;
+using KcpPlayer.Avalonia.Utils;
 using KcpPlayer.Avalonia.ViewModels;
 using KcpPlayer.Avalonia.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,8 @@ namespace KcpPlayer.Avalonia;
 
 public partial class App : Application
 {
+    public static IServiceProvider? ServiceProvider { get; private set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -24,9 +27,9 @@ public partial class App : Application
         BindingPlugins.DataValidators.RemoveAt(0);
 
         // 注册应用程序运行所需的所有服务
-        var services = ConfigureServices();
+        ServiceProvider = ConfigureServices();
 
-        var vm = services.GetRequiredService<MainWindowViewModel>();
+        var vm = ServiceProvider.GetRequiredService<MainWindowViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow

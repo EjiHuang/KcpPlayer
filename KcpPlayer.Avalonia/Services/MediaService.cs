@@ -44,6 +44,36 @@ public class MediaService : IMediaService
     {
         _ioContext = IOContext.CreateInputFromStream(stream);
         _demuxer = await Task.Run(() => new MediaDemuxer(_ioContext));
+
+        _stream = _demuxer.FindBestStream(MediaTypes.Video);
+        if (_stream == null)
+            return;
+
+        _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
+        if (_decoder == null)
+            return;
+
+        var hwConfigs = _decoder.GetHardwareConfigs();
+        if (hwConfigs != null && hwConfigs.Count > 0)
+        {
+            var hwConfig = hwConfigs.FirstOrDefault(config =>
+                config.DeviceType == HWDeviceTypes.DXVA2
+            );
+            _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
+
+            if (_hwDevice != null)
+            {
+                _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
+            }
+        }
+
+        _decoder.Open();
+
+        VideoWidth = _decoder.Width;
+        VideoHeight = _decoder.Height;
+
+        _ctsForDecodeLoop = new CancellationTokenSource();
+        _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
     }
 
     public async Task DecodeRTSPAsync(string url)
@@ -125,7 +155,10 @@ public class MediaService : IMediaService
 
                         lock (_lock)
                         {
-                            while (_videoFrames.Count > 1 && _videoFrames.TryDequeue(out var savedFrame))
+                            while (
+                                _videoFrames.Count > 1
+                                && _videoFrames.TryDequeue(out var savedFrame)
+                            )
                             {
                                 savedFrame.Dispose();
                             }
@@ -167,10 +200,7 @@ public class MediaService : IMediaService
 
     internal void SetVideoSurfaceSize(int width, int height)
     {
-        var scale = Math.Min(
-            width / (double)VideoWidth,
-            height / (double)VideoHeight
-        );
+        var scale = Math.Min(width / (double)VideoWidth, height / (double)VideoHeight);
 
         int w = (int)Math.Round(VideoWidth * scale);
         int h = (int)Math.Round(VideoHeight * scale);

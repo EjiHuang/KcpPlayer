@@ -12,17 +12,25 @@ internal class StreamIOContext : IOContext
         _leaveOpen = leaveOpen;
     }
 
-#if NETSTANDARD2_1_OR_GREATER
-    protected override int Read(Span<byte> buffer) => _stream.Read(buffer);
-    protected override void Write(ReadOnlySpan<byte> buffer) => _stream.Write(buffer);
-#else
+//#if NETSTANDARD2_1_OR_GREATER
+//    protected override int Read(Span<byte> buffer) => _stream.Read(buffer);
+//    protected override void Write(ReadOnlySpan<byte> buffer) => _stream.Write(buffer);
+//#else
     private readonly byte[] _scratchBuffer = new byte[4096 * 4];
 
+    private long _readPos = 0;
     protected override int Read(Span<byte> buffer)
     {
-        int bytesRead = _stream.Read(_scratchBuffer, 0, Math.Min(buffer.Length, _scratchBuffer.Length));
-        _scratchBuffer.AsSpan(0, bytesRead).CopyTo(buffer);
-        return bytesRead;
+        lock (_stream)
+        {
+            _stream.Position = _readPos;
+
+            int bytesRead = _stream.Read(_scratchBuffer, 0, Math.Min(buffer.Length, _scratchBuffer.Length));
+            _scratchBuffer.AsSpan(0, bytesRead).CopyTo(buffer);
+
+            _readPos += bytesRead;
+            return bytesRead;
+        }
     }
     protected override void Write(ReadOnlySpan<byte> buffer)
     {
@@ -34,7 +42,7 @@ internal class StreamIOContext : IOContext
             pos += count;
         }
     }
-#endif
+//#endif
 
     protected override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
 

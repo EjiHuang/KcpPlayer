@@ -1,11 +1,17 @@
 ﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.OpenGL;
 using Avalonia.OpenGL.Controls;
 using Avalonia.Threading;
+using CommunityToolkit.Mvvm.DependencyInjection;
 using KcpPlayer.Avalonia.Services;
+using KcpPlayer.Avalonia.Utils;
+using Microsoft.Extensions.DependencyInjection;
+using OpenTK.Compute.OpenCL;
 using OpenTK.Graphics.OpenGL4;
 using Serilog;
 using Ursa.Controls;
@@ -26,6 +32,8 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
     public OpenTkPlayer()
     {
         _mediaService = new MediaService();
+
+        _logger = App.ServiceProvider?.GetRequiredService<ILogger>();
     }
 
     protected override void OnOpenGlRender(GlInterface gl, int fb)
@@ -74,16 +82,96 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
         base.OnOpenGlDeinit(gl);
     }
 
-    public void SetLogger(ILogger logger)
+    RTSPClient? _rtspClient;
+
+    public void PlayRTSP(string url)
     {
-        _logger = logger;
+        _rtspClient ??= new RTSPClient(_logger!);
+
+        _rtspClient.NewVideoStream += (_, args) =>
+        {
+            switch (args.StreamType)
+            {
+                case "H264":
+                    NewH264Stream(args, _rtspClient);
+                    break;
+                default:
+                    _logger?.Warning("Unknow Video format {streamtype}", args.StreamType);
+                    break;
+            }
+        };
+
+        _rtspClient.SetupMessageCompleted += (_, _) =>
+        {
+            _rtspClient.Play();
+        };
+        
+        _rtspClient.Connect(
+            url,
+            "admin",
+            "admin",
+            RTSPClient.RTP_TRANSPORT.TCP,
+            RTSPClient.MEDIA_REQUEST.VIDEO_ONLY
+        );
+
+
     }
 
+    private void NewH264Stream(NewStreamEventArgs args, RTSPClient client)
+    {
+        string now = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        string filename = "rtsp_capture_" + now + ".264";
+
+        //FileStream fs_v = new(filename, FileMode.Create);
+        if (args.StreamConfigurationData is H264StreamConfigurationData h264StreamConfigurationData)
+        {
+            _stream.Write([0x00, 0x00, 0x00, 0x01]);
+            _stream.Write(h264StreamConfigurationData.SPS);
+
+            _stream.Write([0x00, 0x00, 0x00, 0x01]);
+            _stream.Write(h264StreamConfigurationData.PPS);
+        }
+
+        client.ReceivedVideoData += (_, dataArgs) =>
+        {
+            foreach (var nalUnitMem in dataArgs.Data)
+            {
+                var nalUnit = nalUnitMem.Span;
+                // Output some H264 stream information
+                if (nalUnit.Length > 5)
+                {
+                    int nal_ref_idc = (nalUnit[4] >> 5) & 0x03;
+                    int nal_unit_type = nalUnit[4] & 0x1F;
+                    string description = nal_unit_type switch
+                    {
+                        1 => "NON IDR NAL",
+                        5 => "IDR NAL",
+                        6 => "SEI NAL",
+                        7 => "SPS NAL",
+                        8 => "PPS NAL",
+                        9 => "ACCESS UNIT DELIMITER NAL",
+                        _ => "OTHER NAL",
+                    };
+                    _logger?.Information("NAL Ref = {nal_ref_idc} NAL Type = {nal_unit_type} {description}", nal_ref_idc, nal_unit_type, description);
+                }
+
+                _stream.Write(nalUnit);
+                //fs_v.Write(nalUnit);
+            }
+        };
+    }
+
+    MemoryStream _stream = new(0);
     public async Task<bool> PlayVideoAsync(string videoPath)
     {
         try
         {
-            await _mediaService.DecodeRTSPAsync(videoPath);
+            // 测试RTSP
+            PlayRTSP(videoPath);
+
+            await Task.Delay(1000);
+            await _mediaService.DecodeFromStreamAsync(_stream);
+            //await _mediaService.DecodeRTSPAsync(videoPath);
             return true;
         }
         catch (Exception ex)
