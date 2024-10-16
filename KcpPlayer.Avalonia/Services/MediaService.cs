@@ -16,7 +16,7 @@ public class MediaService : IMediaService
 {
     private readonly ILogger _logger;
 
-    private ConcurrentQueue<VideoFrame> _videoFrames = new ConcurrentQueue<VideoFrame>();
+    private readonly ConcurrentQueue<VideoFrame> _videoFrames = new();
 
     private MediaDemuxer? _demuxer;
     private HardwareDevice? _hwDevice;
@@ -29,8 +29,8 @@ public class MediaService : IMediaService
 
     private VideoStreamRendererService? _renderHelper;
 
-    private RTSPClient _rtspClient;
-    private ConcurrentQueue<byte[]> _naluQueue = new();
+    private readonly RTSPClient _rtspClient;
+    private readonly ConcurrentQueue<byte[]> _naluQueue = new();
     private AsyncAutoResetEvent? _asyncAutoResetEvent;
 
     public int VideoWidth { get; private set; }
@@ -51,79 +51,27 @@ public class MediaService : IMediaService
         _renderHelper = new VideoStreamRendererService();
     }
 
-    public async Task DecodeFromQueueAsync(ConcurrentQueue<byte[]> queue)
+    private async Task DecodeFromQueueAsync(ConcurrentQueue<byte[]> queue)
     {
         _ioContext = IOContext.CreateInputFromQueue(queue);
         _demuxer = await Task.Run(() => new MediaDemuxer(_ioContext));
-
-        _stream = _demuxer.FindBestStream(MediaTypes.Video);
-        if (_stream == null)
-            return;
-
-        _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
-        if (_decoder == null)
-            return;
-
-        var hwConfigs = _decoder.GetHardwareConfigs();
-        if (hwConfigs != null && hwConfigs.Count > 0)
-        {
-            var hwConfig = hwConfigs.FirstOrDefault(config =>
-                config.DeviceType == HWDeviceTypes.DXVA2
-            );
-            _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
-
-            if (_hwDevice != null)
-            {
-                _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
-            }
-        }
-
-        _decoder.Open();
-
-        VideoWidth = _decoder.Width;
-        VideoHeight = _decoder.Height;
-
-        _ctsForDecodeLoop = new CancellationTokenSource();
-        _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
+        StartDecode();
     }
 
     public async Task DecodeFromStreamAsync(Stream stream)
     {
         _ioContext = IOContext.CreateInputFromStream(stream);
         _demuxer = await Task.Run(() => new MediaDemuxer(_ioContext));
-
-        _stream = _demuxer.FindBestStream(MediaTypes.Video);
-        if (_stream == null)
-            return;
-
-        _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
-        if (_decoder == null)
-            return;
-
-        var hwConfigs = _decoder.GetHardwareConfigs();
-        if (hwConfigs != null && hwConfigs.Count > 0)
-        {
-            var hwConfig = hwConfigs.FirstOrDefault(config =>
-                config.DeviceType == HWDeviceTypes.DXVA2
-            );
-            _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
-
-            if (_hwDevice != null)
-            {
-                _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
-            }
-        }
-
-        _decoder.Open();
-
-        VideoWidth = _decoder.Width;
-        VideoHeight = _decoder.Height;
-
-        _ctsForDecodeLoop = new CancellationTokenSource();
-        _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
+        StartDecode();
     }
 
-    public async Task DecodeUseRtspClient(string url)
+    public async Task DecodeRtspAsync(string url)
+    {
+        _demuxer = await Task.Run(() => new MediaDemuxer(url));
+        StartDecode();
+    }
+
+    public async Task DecodeUseRtspClientAsync(string url)
     {
         _asyncAutoResetEvent = new AsyncAutoResetEvent(false);
         _rtspClient.Connect(
@@ -145,39 +93,40 @@ public class MediaService : IMediaService
         }
     }
 
-    public async Task DecodeRTSPAsync(string url)
+    private void StartDecode()
     {
-        _demuxer = await Task.Run(() => new MediaDemuxer(url));
-
-        _stream = _demuxer.FindBestStream(MediaTypes.Video);
-        if (_stream == null)
-            return;
-
-        _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
-        if (_decoder == null)
-            return;
-
-        var hwConfigs = _decoder.GetHardwareConfigs();
-        if (hwConfigs != null && hwConfigs.Count > 0)
+        if (_demuxer != null)
         {
-            var hwConfig = hwConfigs.FirstOrDefault(config =>
-                config.DeviceType == HWDeviceTypes.DXVA2
-            );
-            _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
+            _stream = _demuxer.FindBestStream(MediaTypes.Video);
+            if (_stream == null)
+                return;
 
-            if (_hwDevice != null)
+            _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
+            if (_decoder == null)
+                return;
+
+            var hwConfigs = _decoder.GetHardwareConfigs();
+            if (hwConfigs != null && hwConfigs.Count > 0)
             {
-                _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
+                var hwConfig = hwConfigs.FirstOrDefault(config =>
+                    config.DeviceType == HWDeviceTypes.DXVA2
+                );
+                _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
+
+                if (_hwDevice != null)
+                {
+                    _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
+                }
             }
+
+            _decoder.Open();
+
+            VideoWidth = _decoder.Width;
+            VideoHeight = _decoder.Height;
+
+            _ctsForDecodeLoop = new CancellationTokenSource();
+            _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
         }
-
-        _decoder.Open();
-
-        VideoWidth = _decoder.Width;
-        VideoHeight = _decoder.Height;
-
-        _ctsForDecodeLoop = new CancellationTokenSource();
-        _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
     }
 
     public async Task StopVideoAsync()
@@ -354,7 +303,7 @@ public class MediaService : IMediaService
         }
     }
 
-    internal void SetVideoSurfaceSize(int width, int height)
+    public void SetVideoSurfaceSize(int width, int height)
     {
         var scale = Math.Min(width / (double)VideoWidth, height / (double)VideoHeight);
 

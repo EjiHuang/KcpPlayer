@@ -23,7 +23,7 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
     private AvaloniaTkContext? _avaloniaTkContext;
     private PixelSize _pixelSize;
 
-    private readonly MediaService _mediaService;
+    private readonly IMediaService _mediaService;
     public int VideoWidth => _mediaService.VideoWidth;
     public int VideoHeight => _mediaService.VideoHeight;
 
@@ -83,7 +83,7 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
     {
         try
         {
-            await _mediaService.DecodeUseRtspClient(videoPath);
+            await _mediaService.DecodeUseRtspClientAsync(videoPath);
             return true;
         }
         catch (Exception ex)

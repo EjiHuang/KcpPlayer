@@ -12,42 +12,47 @@ internal class StreamIOContext : IOContext
         _leaveOpen = leaveOpen;
     }
 
-//#if NETSTANDARD2_1_OR_GREATER
-//    protected override int Read(Span<byte> buffer) => _stream.Read(buffer);
-//    protected override void Write(ReadOnlySpan<byte> buffer) => _stream.Write(buffer);
-//#else
+#if NETSTANDARD2_1_OR_GREATER
+    protected override int Read(Span<byte> buffer) => _stream.Read(buffer);
+
+    protected override void Write(ReadOnlySpan<byte> buffer) => _stream.Write(buffer);
+#else
     private readonly byte[] _scratchBuffer = new byte[4096 * 4];
 
-    private long _readPos = 0;
     protected override int Read(Span<byte> buffer)
     {
-        _stream.Position = _readPos;
-
-        int bytesRead = _stream.Read(_scratchBuffer, 0, Math.Min(buffer.Length, _scratchBuffer.Length));
+        int bytesRead = _stream.Read(
+            _scratchBuffer,
+            0,
+            Math.Min(buffer.Length, _scratchBuffer.Length)
+        );
         _scratchBuffer.AsSpan(0, bytesRead).CopyTo(buffer);
-
-        _readPos += bytesRead;
         return bytesRead;
     }
+
     protected override void Write(ReadOnlySpan<byte> buffer)
     {
         int pos = 0;
-        while (pos < buffer.Length) {
+        while (pos < buffer.Length)
+        {
             int count = Math.Min(_scratchBuffer.Length, buffer.Length - pos);
             buffer.Slice(pos, count).CopyTo(_scratchBuffer);
             _stream.Write(_scratchBuffer, 0, count);
             pos += count;
         }
     }
-//#endif
+#endif
 
     protected override long Seek(long offset, SeekOrigin origin) => _stream.Seek(offset, origin);
 
     protected override long? GetLength()
     {
-        try {
+        try
+        {
             return _stream.Length;
-        } catch (NotSupportedException) {
+        }
+        catch (NotSupportedException)
+        {
             return null;
         }
     }
@@ -56,7 +61,8 @@ internal class StreamIOContext : IOContext
     {
         base.Free();
 
-        if (!_leaveOpen) {
+        if (!_leaveOpen)
+        {
             _stream.Dispose();
         }
     }
