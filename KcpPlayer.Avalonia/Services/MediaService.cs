@@ -6,11 +6,16 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FFmpeg.Wrapper;
+using KcpPlayer.Avalonia.Utils;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace KcpPlayer.Avalonia.Services;
 
 public class MediaService : IMediaService
 {
+    private readonly ILogger _logger;
+
     private ConcurrentQueue<VideoFrame> _videoFrames = new ConcurrentQueue<VideoFrame>();
 
     private MediaDemuxer? _demuxer;
@@ -20,11 +25,13 @@ public class MediaService : IMediaService
     private SwScaler? _swScaler = null;
     private Task? _decodeLoop;
     private CancellationTokenSource? _ctsForDecodeLoop;
-
-    private MemoryStream? _streamStream;
     private IOContext? _ioContext;
 
     private VideoStreamRendererService? _renderHelper;
+
+    private RTSPClient _rtspClient;
+    private ConcurrentQueue<byte[]> _naluQueue = new();
+    private AsyncAutoResetEvent? _asyncAutoResetEvent;
 
     public int VideoWidth { get; private set; }
     public int VideoHeight { get; private set; }
@@ -32,7 +39,11 @@ public class MediaService : IMediaService
 
     public MediaService()
     {
+        _logger = App.ServiceProvider!.GetRequiredService<ILogger>();
         FFmpeg.AutoGen.ffmpeg.RootPath = AppContext.BaseDirectory + "runtimes/win-x64/native";
+
+        _rtspClient = new RTSPClient(_logger);
+        InitializeRtspClient();
     }
 
     public void InitializeVideoStreamRenderer()
@@ -112,6 +123,28 @@ public class MediaService : IMediaService
         _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
     }
 
+    public async Task DecodeUseRtspClient(string url)
+    {
+        _asyncAutoResetEvent = new AsyncAutoResetEvent(false);
+        _rtspClient.Connect(
+            url,
+            "admin",
+            "admin",
+            RTSPClient.RTP_TRANSPORT.TCP,
+            RTSPClient.MEDIA_REQUEST.VIDEO_ONLY
+        );
+
+        if (await _asyncAutoResetEvent.WaitAsync(TimeSpan.FromMilliseconds(5000)))
+        {
+            _asyncAutoResetEvent = null;
+            await DecodeFromQueueAsync(_naluQueue);
+        }
+        else
+        {
+            _rtspClient.Stop();
+        }
+    }
+
     public async Task DecodeRTSPAsync(string url)
     {
         _demuxer = await Task.Run(() => new MediaDemuxer(url));
@@ -149,6 +182,11 @@ public class MediaService : IMediaService
 
     public async Task StopVideoAsync()
     {
+        if (!_rtspClient.StreamingFinished())
+        {
+            _rtspClient.Stop();
+        }
+
         if (IsDecoding)
         {
             _ctsForDecodeLoop?.Cancel();
@@ -215,8 +253,95 @@ public class MediaService : IMediaService
         IsDecoding = false;
     }
 
+    #region RTSP
+
+    private void InitializeRtspClient()
+    {
+        _rtspClient.NewVideoStream += OnNewVideoStream;
+        _rtspClient.SetupMessageCompleted += OnSetupMessageCompleted;
+        _rtspClient.ReceivedVideoData += OnReceivedVideoData;
+    }
+
+    private void OnReceivedVideoData(object? sender, SimpleDataEventArgs e)
+    {
+        foreach (var nalUnitMem in e.Data)
+        {
+            var nalUnit = nalUnitMem.Span;
+            // Output some H264 stream information
+            if (nalUnit.Length > 5)
+            {
+                int nal_ref_idc = (nalUnit[4] >> 5) & 0x03;
+                int nal_unit_type = nalUnit[4] & 0x1F;
+                string description = nal_unit_type switch
+                {
+                    1 => "NON IDR NAL",
+                    5 => "IDR NAL",
+                    6 => "SEI NAL",
+                    7 => "SPS NAL",
+                    8 => "PPS NAL",
+                    9 => "ACCESS UNIT DELIMITER NAL",
+                    _ => "OTHER NAL",
+                };
+                _logger.Information(
+                    "NAL Ref = {nal_ref_idc} NAL Type = {nal_unit_type} {description}",
+                    nal_ref_idc,
+                    nal_unit_type,
+                    description
+                );
+
+                _naluQueue.Enqueue(nalUnit.ToArray());
+
+                if (nal_unit_type == 5)
+                {
+                    _asyncAutoResetEvent?.Set();
+                }
+            }
+        }
+    }
+
+    private void OnSetupMessageCompleted(object? sender, EventArgs e)
+    {
+        _rtspClient.Play();
+    }
+
+    private void OnNewVideoStream(object? sender, NewStreamEventArgs e)
+    {
+        switch (e.StreamType)
+        {
+            case "H264":
+                NewH264Stream(e, _rtspClient);
+                break;
+            default:
+                _logger.Warning("Unknow Video format {streamtype}", e.StreamType);
+                break;
+        }
+    }
+
+    private void NewH264Stream(NewStreamEventArgs e, RTSPClient client)
+    {
+        _naluQueue.Clear();
+        if (e.StreamConfigurationData is H264StreamConfigurationData h264StreamConfigurationData)
+        {
+            var sps = h264StreamConfigurationData.SPS;
+            var pps = h264StreamConfigurationData.PPS;
+            var startCode = new byte[] { 0x00, 0x00, 0x00, 0x01 };
+            var totalLength = 4 + sps.Length + 4 + pps.Length;
+            var spsPps = new byte[totalLength];
+
+            Buffer.BlockCopy(startCode, 0, spsPps, 0, 4);
+            Buffer.BlockCopy(sps, 0, spsPps, 4, sps.Length);
+            Buffer.BlockCopy(startCode, 0, spsPps, 4 + sps.Length, 4);
+            Buffer.BlockCopy(pps, 0, spsPps, 4 + sps.Length + 4, pps.Length);
+
+            _naluQueue.Enqueue(spsPps);
+        }
+    }
+
+    #endregion
+
+    #region Render
+
     private static object _lock = new object();
-    private Action? _callbackForRender;
 
     public unsafe void RenderVideo()
     {
@@ -227,11 +352,6 @@ public class MediaService : IMediaService
                 _renderHelper.DrawTexture(frame);
             }
         }
-    }
-
-    internal void SetRenderCallback(Action value)
-    {
-        _callbackForRender = value;
     }
 
     internal void SetVideoSurfaceSize(int width, int height)
@@ -246,4 +366,6 @@ public class MediaService : IMediaService
         _renderHelper?.ReSetVideoSurfaceSize(x, y, w, h);
         //Debug.WriteLine($"{x} {y} {w} {h}");
     }
+
+    #endregion
 }
