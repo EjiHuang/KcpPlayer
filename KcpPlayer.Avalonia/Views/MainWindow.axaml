@@ -29,17 +29,19 @@
         <opentk:OpenTkPlayer x:Name="OpenGlControlHost" VideoPath="{Binding Url}" />
         <Grid Grid.Row="1" Margin="10,5">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="400" />
+                <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="auto" />
-                <ColumnDefinition />
             </Grid.ColumnDefinitions>
             <DockPanel>
                 <TextBlock
                     Margin="0,0,10,0"
                     VerticalAlignment="Center"
+                    DockPanel.Dock="Left"
                     Text="Url" />
                 <ComboBox
                     MinWidth="360"
+                    HorizontalAlignment="Stretch"
+                    DockPanel.Dock="Right"
                     ItemsSource="{Binding Urls}"
                     SelectedValue="{Binding Url}" />
             </DockPanel>

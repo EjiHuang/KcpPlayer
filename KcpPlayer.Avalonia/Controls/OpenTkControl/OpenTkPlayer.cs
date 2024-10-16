@@ -83,6 +83,11 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
     {
         try
         {
+            if (_mediaService.IsDecoding)
+            {
+                return false;
+            }
+
             await _mediaService.DecodeUseRtspClientAsync(videoPath);
             return true;
         }
