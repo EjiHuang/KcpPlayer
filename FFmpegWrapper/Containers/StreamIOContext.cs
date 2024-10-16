@@ -21,16 +21,13 @@ internal class StreamIOContext : IOContext
     private long _readPos = 0;
     protected override int Read(Span<byte> buffer)
     {
-        lock (_stream)
-        {
-            _stream.Position = _readPos;
+        _stream.Position = _readPos;
 
-            int bytesRead = _stream.Read(_scratchBuffer, 0, Math.Min(buffer.Length, _scratchBuffer.Length));
-            _scratchBuffer.AsSpan(0, bytesRead).CopyTo(buffer);
+        int bytesRead = _stream.Read(_scratchBuffer, 0, Math.Min(buffer.Length, _scratchBuffer.Length));
+        _scratchBuffer.AsSpan(0, bytesRead).CopyTo(buffer);
 
-            _readPos += bytesRead;
-            return bytesRead;
-        }
+        _readPos += bytesRead;
+        return bytesRead;
     }
     protected override void Write(ReadOnlySpan<byte> buffer)
     {

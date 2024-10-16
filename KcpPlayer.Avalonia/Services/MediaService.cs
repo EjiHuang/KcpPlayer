@@ -40,6 +40,42 @@ public class MediaService : IMediaService
         _renderHelper = new VideoStreamRendererService();
     }
 
+    public async Task DecodeFromQueueAsync(ConcurrentQueue<byte[]> queue)
+    {
+        _ioContext = IOContext.CreateInputFromQueue(queue);
+        _demuxer = await Task.Run(() => new MediaDemuxer(_ioContext));
+
+        _stream = _demuxer.FindBestStream(MediaTypes.Video);
+        if (_stream == null)
+            return;
+
+        _decoder = (VideoDecoder)_demuxer.CreateStreamDecoder(_stream, open: false);
+        if (_decoder == null)
+            return;
+
+        var hwConfigs = _decoder.GetHardwareConfigs();
+        if (hwConfigs != null && hwConfigs.Count > 0)
+        {
+            var hwConfig = hwConfigs.FirstOrDefault(config =>
+                config.DeviceType == HWDeviceTypes.DXVA2
+            );
+            _hwDevice = HardwareDevice.Create(hwConfig.DeviceType);
+
+            if (_hwDevice != null)
+            {
+                _decoder.SetupHardwareAccelerator(hwConfig, _hwDevice);
+            }
+        }
+
+        _decoder.Open();
+
+        VideoWidth = _decoder.Width;
+        VideoHeight = _decoder.Height;
+
+        _ctsForDecodeLoop = new CancellationTokenSource();
+        _decodeLoop = Task.Run(DecodeLoop, _ctsForDecodeLoop.Token);
+    }
+
     public async Task DecodeFromStreamAsync(Stream stream)
     {
         _ioContext = IOContext.CreateInputFromStream(stream);

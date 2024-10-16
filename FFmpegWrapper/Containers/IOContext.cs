@@ -1,4 +1,6 @@
-﻿namespace FFmpeg.Wrapper;
+﻿using System.Collections.Concurrent;
+
+namespace FFmpeg.Wrapper;
 
 public abstract unsafe class IOContext : FFObject
 {
@@ -61,6 +63,14 @@ public abstract unsafe class IOContext : FFObject
             throw new InvalidOperationException();
         }
         ffmpeg.avio_flush(Handle);
+    }
+
+    /// <summary> Creates an IOContext that reads from the given queue. </summary>
+    /// <param name="leaveOpen"> If true, don't clear the queue along with the IOContext. </param>
+    /// <param name="bufferSize"> IOContext internal buffer size. </param>
+    public static IOContext CreateInputFromQueue(ConcurrentQueue<byte[]> queue, bool leaveOpen = false, int bufferSize = 4096)
+    {
+        return new QueueIOContext(queue, leaveOpen, bufferSize);
     }
 
     /// <summary> Creates an IOContext that reads from the given stream. </summary>

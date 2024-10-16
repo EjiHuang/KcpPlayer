@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
@@ -105,7 +106,7 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
         {
             _rtspClient.Play();
         };
-        
+
         _rtspClient.Connect(
             url,
             "admin",
@@ -113,23 +114,31 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
             RTSPClient.RTP_TRANSPORT.TCP,
             RTSPClient.MEDIA_REQUEST.VIDEO_ONLY
         );
-
-
     }
 
     private void NewH264Stream(NewStreamEventArgs args, RTSPClient client)
     {
-        string now = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        string filename = "rtsp_capture_" + now + ".264";
-
-        //FileStream fs_v = new(filename, FileMode.Create);
+        _naluQueue.Clear();
         if (args.StreamConfigurationData is H264StreamConfigurationData h264StreamConfigurationData)
         {
-            _stream.Write([0x00, 0x00, 0x00, 0x01]);
-            _stream.Write(h264StreamConfigurationData.SPS);
+            var sps = h264StreamConfigurationData.SPS;
+            var pps = h264StreamConfigurationData.PPS;
+            var startCode = new byte[] { 0x00, 0x00, 0x00, 0x01 };
+            var totalLength = 4 + sps.Length + 4 + pps.Length;
+            var spsPps = new byte[totalLength];
 
-            _stream.Write([0x00, 0x00, 0x00, 0x01]);
-            _stream.Write(h264StreamConfigurationData.PPS);
+            System.Buffer.BlockCopy(startCode, 0, spsPps, 0, 4);
+            System.Buffer.BlockCopy(sps, 0, spsPps, 4, sps.Length);
+            System.Buffer.BlockCopy(startCode, 0, spsPps, 4 + sps.Length, 4);
+            System.Buffer.BlockCopy(pps, 0, spsPps, 4 + sps.Length + 4, pps.Length);
+
+            _naluQueue.Enqueue(spsPps);
+
+            //_stream.Write([0x00, 0x00, 0x00, 0x01]);
+            //_stream.Write(h264StreamConfigurationData.SPS);
+
+            //_stream.Write([0x00, 0x00, 0x00, 0x01]);
+            //_stream.Write(h264StreamConfigurationData.PPS);
         }
 
         client.ReceivedVideoData += (_, dataArgs) =>
@@ -152,16 +161,23 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
                         9 => "ACCESS UNIT DELIMITER NAL",
                         _ => "OTHER NAL",
                     };
-                    _logger?.Information("NAL Ref = {nal_ref_idc} NAL Type = {nal_unit_type} {description}", nal_ref_idc, nal_unit_type, description);
+                    _logger?.Information(
+                        "NAL Ref = {nal_ref_idc} NAL Type = {nal_unit_type} {description}",
+                        nal_ref_idc,
+                        nal_unit_type,
+                        description
+                    );
                 }
 
-                _stream.Write(nalUnit);
-                //fs_v.Write(nalUnit);
+                _naluQueue.Enqueue(nalUnit.ToArray());
+                //_stream.Write(nalUnit);
             }
         };
     }
 
-    MemoryStream _stream = new(0);
+    ConcurrentQueue<byte[]> _naluQueue = new();
+    MemoryStream _stream = new(4096);
+
     public async Task<bool> PlayVideoAsync(string videoPath)
     {
         try
@@ -170,7 +186,8 @@ public class OpenTkPlayer : OpenGlControlBase, IOpenTkPlayer
             PlayRTSP(videoPath);
 
             await Task.Delay(1000);
-            await _mediaService.DecodeFromStreamAsync(_stream);
+            await _mediaService.DecodeFromQueueAsync(_naluQueue);
+            //await _mediaService.DecodeFromStreamAsync(_stream);
             //await _mediaService.DecodeRTSPAsync(videoPath);
             return true;
         }
