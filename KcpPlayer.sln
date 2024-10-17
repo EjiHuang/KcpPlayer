@@ -3,13 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KcpPlayer", "KcpPlayer\KcpPlayer.csproj", "{CFC8B2AE-BAE2-474C-A5CE-42F875E81352}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KcpPlayer.WPF", "KcpPlayer\KcpPlayer.WPF.csproj", "{CFC8B2AE-BAE2-474C-A5CE-42F875E81352}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FFmpegWrapper", "FFmpegWrapper\FFmpegWrapper.csproj", "{7F16DA5D-31CE-4548-83ED-08B98AFE27E2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kcp", "Kcp\Kcp.csproj", "{452F3961-7A78-47F6-B1D3-47F483856277}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KcpPlayer.Avalonia", "KcpPlayer.Avalonia\KcpPlayer.Avalonia.csproj", "{CEEC701F-62AB-458E-B36B-029B3649DA4E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KcpPlayer.Avalonia", "KcpPlayer.Avalonia\KcpPlayer.Avalonia.csproj", "{CEEC701F-62AB-458E-B36B-029B3649DA4E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KcpLive", "KcpLive\KcpLive.csproj", "{D3AE446F-BA8A-4896-8A93-7397DADB7A56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{CEEC701F-62AB-458E-B36B-029B3649DA4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CEEC701F-62AB-458E-B36B-029B3649DA4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CEEC701F-62AB-458E-B36B-029B3649DA4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3AE446F-BA8A-4896-8A93-7397DADB7A56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3AE446F-BA8A-4896-8A93-7397DADB7A56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3AE446F-BA8A-4896-8A93-7397DADB7A56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3AE446F-BA8A-4896-8A93-7397DADB7A56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
