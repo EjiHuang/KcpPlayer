@@ -1,4 +1,5 @@
-﻿using FFmpeg.Wrapper;
+﻿using FFmpeg.AutoGen;
+using FFmpeg.Wrapper;
 using HPPH;
 using ScreenCapture.NET;
 
@@ -41,8 +42,12 @@ internal class Program
                     RefImage<ColorBGRA> image = _topLeft.RefImage;
                     fixed (byte* ptr = &image.GetPinnableReference())
                     {
-                        using VideoFrame frame = new VideoFrame();
-                        frame.Data = &ptr;
+                        AVFrame* frame = ffmpeg.av_frame_alloc();
+                        frame->width = image.Width;
+                        frame->height = image.Height;
+                        frame->format = (int)AVPixelFormat.AV_PIX_FMT_BGRA;
+                        frame->data[0] = ptr;
+                        frame->linesize[0] = image.RawStride;
                     }
                 }
             }
